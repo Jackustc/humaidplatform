@@ -19,7 +19,7 @@ export default function TaskPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="mb-10">
         <h1 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">{TASK.title}</h1>
         <p className="text-sm text-gray-500">A research study on Human Multi-Agent AI Interaction Dynamics</p>

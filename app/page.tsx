@@ -39,7 +39,7 @@ export default function ConsentPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">
           Participant Information and Consent
