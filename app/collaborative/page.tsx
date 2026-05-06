@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { COLLABORATIVE, TASK } from "@/lib/data";
 
@@ -29,11 +29,7 @@ export default function CollaborativePage() {
   const [completedSteps, setCompletedSteps] = useState<Step[]>([]);
   const [finalText, setFinalText] = useState(COLLABORATIVE.agent3.summary);
   const [stepTimestamps, setStepTimestamps] = useState<Record<number, string>>({});
-  const initialized = useRef(false);
-
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
     setStepTimestamps({ 1: new Date().toISOString() });
     const t = setTimeout(() => setIsLoading(false), 1800);
     return () => clearTimeout(t);
@@ -259,14 +255,14 @@ export default function CollaborativePage() {
                     onClick={advanceStep}
                     className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
                   >
-                    {currentStep === 1 ? "Use these keywords" : "Use these papers"} &rarr;
+                    {currentStep === 1 ? "Use these keywords" : "Use these papers"}
                   </button>
                 ) : (
                   <button
                     onClick={handleSubmit}
                     className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
                   >
-                    Submit final answer &rarr;
+                    Submit final answer
                   </button>
                 )}
               </div>

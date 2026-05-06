@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { COMPETITIVE, TASK } from "@/lib/data";
 
@@ -20,11 +20,7 @@ export default function CompetitivePage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState("");
   const [selectionTime, setSelectionTime] = useState<string | null>(null);
-  const initialized = useRef(false);
-
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
     const t = setTimeout(() => setIsLoading(false), 2200);
     return () => clearTimeout(t);
   }, []);
@@ -161,7 +157,7 @@ export default function CompetitivePage() {
               onClick={handleSubmit}
               className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
             >
-              Submit final answer &rarr;
+              Submit final answer
             </button>
           </div>
         </div>

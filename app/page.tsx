@@ -42,7 +42,7 @@ export default function Home() {
           {/* Collaborative */}
           <div className="border border-gray-200 rounded-lg p-6 hover:border-gray-400 transition-colors flex flex-col">
             <h3 className="font-semibold text-gray-900 mb-1">Collaborative Mode</h3>
-            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+            <p className="text-sm text-gray-500 mb-4 leading-relaxed min-h-[4.5rem]">
               Work through a sequential pipeline where each agent builds on the previous output.
             </p>
             <div className="space-y-2 mb-6 text-xs text-gray-500 flex-1">
@@ -71,7 +71,7 @@ export default function Home() {
           {/* Competitive */}
           <div className="border border-gray-200 rounded-lg p-6 hover:border-gray-400 transition-colors flex flex-col">
             <h3 className="font-semibold text-gray-900 mb-1">Competitive Mode</h3>
-            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+            <p className="text-sm text-gray-500 mb-4 leading-relaxed min-h-[4.5rem]">
               Three agents work independently on the same task. Compare and select the best output.
             </p>
             <div className="space-y-2 mb-6 text-xs text-gray-500 flex-1">
