@@ -152,7 +152,7 @@ export default function CompetitivePage() {
               <p className="text-xs text-gray-400 mt-1.5">Modified from original</p>
             )}
           </div>
-          <div className="px-5 pb-5">
+          <div className="px-5 pb-5 flex justify-center">
             <button
               onClick={handleSubmit}
               className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"

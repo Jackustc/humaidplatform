@@ -249,7 +249,7 @@ export default function CollaborativePage() {
             </div>
 
             {!isLoading && (
-              <div className="px-5 pb-5">
+              <div className="px-5 pb-5 flex justify-center">
                 {currentStep < 3 ? (
                   <button
                     onClick={advanceStep}
