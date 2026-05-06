@@ -21,7 +21,7 @@ export default function InstructionsPage() {
   if (!mode) return null;
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="mb-8">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
           {mode === "collaborative" ? "Collaborative Mode" : "Competitive Mode"}

@@ -97,7 +97,7 @@ export default function SubmitPage() {
 
   if (!data) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-20">
+      <div className="max-w-3xl mx-auto text-center py-20">
         <p className="text-sm text-gray-400">No session data found.</p>
         <Link href="/" className="text-gray-700 underline text-sm mt-2 inline-block">Return to home</Link>
       </div>
@@ -110,7 +110,7 @@ export default function SubmitPage() {
       : null;
 
     return (
-      <div className="max-w-2xl mx-auto py-16">
+      <div className="max-w-3xl mx-auto py-16">
         <div className="mb-8">
           <div className="w-10 h-10 border-2 border-gray-900 rounded-full flex items-center justify-center mb-5">
             <svg className="w-5 h-5 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -165,7 +165,7 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Review and Submit</h1>
         <p className="text-sm text-gray-500">Review your answer and complete the short survey before submitting.</p>
