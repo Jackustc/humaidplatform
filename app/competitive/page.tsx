@@ -4,6 +4,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { COMPETITIVE, TASK } from "@/lib/data";
 
+function useTimer() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 function Skeleton() {
   return (
     <div className="animate-pulse space-y-2.5 py-2">
@@ -16,6 +27,7 @@ function Skeleton() {
 
 export default function CompetitivePage() {
   const router = useRouter();
+  const timer = useTimer();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState("");
@@ -51,15 +63,18 @@ export default function CompetitivePage() {
 
   return (
     <div>
+      <div className="flex items-center justify-between mb-8">
       <a
-        href="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 mb-8 transition-colors"
+        href="/task"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
         </svg>
         Back
       </a>
+      <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
+      </div>
 
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Competitive Mode</h1>

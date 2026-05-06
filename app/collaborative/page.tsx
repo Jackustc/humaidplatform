@@ -12,6 +12,17 @@ const STEPS = [
   { step: 3 as Step, label: "Summary", agent: COLLABORATIVE.agent3 },
 ];
 
+function useTimer() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 function Skeleton() {
   return (
     <div className="animate-pulse space-y-3 py-2">
@@ -24,6 +35,7 @@ function Skeleton() {
 
 export default function CollaborativePage() {
   const router = useRouter();
+  const timer = useTimer();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [completedSteps, setCompletedSteps] = useState<Step[]>([]);
@@ -61,15 +73,18 @@ export default function CollaborativePage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
       <a
-        href="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 mb-8 transition-colors"
+        href="/task"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
         </svg>
         Back
       </a>
+      <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
+      </div>
 
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Collaborative Mode</h1>

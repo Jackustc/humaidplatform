@@ -15,10 +15,53 @@ type SessionData = {
   selectedAgentName?: string;
 };
 
+const LIKERT_QUESTIONS = [
+  { id: "trust", label: "How much did you trust the AI output?", low: "Did not trust at all", high: "Trusted completely" },
+  { id: "difficulty", label: "How difficult was the task?", low: "Very easy", high: "Very difficult" },
+  { id: "satisfaction", label: "How satisfied are you with your final answer?", low: "Not satisfied", high: "Very satisfied" },
+  { id: "effort", label: "How much mental effort did this task require?", low: "Very little effort", high: "A great deal of effort" },
+];
+
+function LikertScale({
+  question,
+  value,
+  onChange,
+}: {
+  question: (typeof LIKERT_QUESTIONS)[0];
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="py-4 border-b border-gray-100 last:border-0">
+      <p className="text-sm font-medium text-gray-800 mb-3">{question.label}</p>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-400 w-24 text-right leading-tight">{question.low}</span>
+        <div className="flex gap-2 flex-1 justify-center">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              onClick={() => onChange(n)}
+              className={`w-9 h-9 rounded-full text-sm font-medium border transition-all ${
+                value === n
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "border-gray-200 text-gray-500 hover:border-gray-400"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-gray-400 w-24 leading-tight">{question.high}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function SubmitPage() {
   const [data, setData] = useState<SessionData | null>(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [likert, setLikert] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,14 +70,23 @@ export default function SubmitPage() {
     if (raw) setData(JSON.parse(raw));
   }, []);
 
+  const allAnswered =
+    rating > 0 && LIKERT_QUESTIONS.every((q) => likert[q.id] > 0);
+
   async function handleFinalSubmit() {
-    if (rating === 0) return;
+    if (!allAnswered) return;
     setIsSubmitting(true);
+    const demographics = sessionStorage.getItem("humaid_demographics");
     try {
       await fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, confidenceRating: rating }),
+        body: JSON.stringify({
+          ...data,
+          confidenceRating: rating,
+          postTaskSurvey: likert,
+          demographics: demographics ? JSON.parse(demographics) : null,
+        }),
       });
     } catch {
       // Non-critical
@@ -47,9 +99,7 @@ export default function SubmitPage() {
     return (
       <div className="max-w-xl mx-auto text-center py-20">
         <p className="text-sm text-gray-400">No session data found.</p>
-        <Link href="/" className="text-gray-700 underline text-sm mt-2 inline-block">
-          Return to home
-        </Link>
+        <Link href="/" className="text-gray-700 underline text-sm mt-2 inline-block">Return to home</Link>
       </div>
     );
   }
@@ -71,7 +121,7 @@ export default function SubmitPage() {
           <p className="text-sm text-gray-500">Thank you for participating in this study.</p>
         </div>
 
-        <div className="border border-gray-200 rounded-lg p-5 text-sm text-gray-600 space-y-2 mb-8">
+        <div className="border border-gray-200 rounded-lg p-5 text-sm space-y-2 mb-8">
           <div className="flex justify-between">
             <span className="text-gray-400 text-xs">Mode</span>
             <span className="text-xs font-medium capitalize">{data.mode}</span>
@@ -117,30 +167,22 @@ export default function SubmitPage() {
   return (
     <div className="max-w-xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Review & Submit</h1>
-        <p className="text-sm text-gray-500">
-          Review your final answer and rate your confidence before submitting.
-        </p>
+        <h1 className="text-xl font-semibold text-gray-900 mb-1">Review and Submit</h1>
+        <p className="text-sm text-gray-500">Review your answer and complete the short survey before submitting.</p>
       </div>
 
       {/* Metadata */}
       <div className="flex flex-wrap gap-2 mb-6 text-xs">
-        <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500 capitalize">
-          {data.mode} mode
-        </span>
+        <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500 capitalize">{data.mode} mode</span>
         {data.selectedAgentName && (
-          <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500">
-            Selected: {data.selectedAgentName}
-          </span>
+          <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500">Selected: {data.selectedAgentName}</span>
         )}
         {data.wasEdited && (
-          <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500">
-            Edited
-          </span>
+          <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500">Edited</span>
         )}
       </div>
 
-      {/* Final text */}
+      {/* Final submission */}
       <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-widest">Your Submission</p>
@@ -150,7 +192,7 @@ export default function SubmitPage() {
         </div>
       </div>
 
-      {/* Confidence */}
+      {/* Confidence rating */}
       <div className="border border-gray-200 rounded-lg p-5 mb-6">
         <p className="text-sm font-medium text-gray-900 mb-1">How confident are you in this submission?</p>
         <p className="text-xs text-gray-400 mb-4">1 = not confident, 5 = very confident</p>
@@ -164,9 +206,7 @@ export default function SubmitPage() {
               className="focus:outline-none"
             >
               <svg
-                className={`w-8 h-8 transition-colors ${
-                  star <= (hoverRating || rating) ? "text-gray-900" : "text-gray-200"
-                }`}
+                className={`w-8 h-8 transition-colors ${star <= (hoverRating || rating) ? "text-gray-900" : "text-gray-200"}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -182,12 +222,26 @@ export default function SubmitPage() {
         )}
       </div>
 
+      {/* Post-task survey */}
+      <div className="border border-gray-200 rounded-lg p-5 mb-6">
+        <p className="text-sm font-medium text-gray-900 mb-1">Quick survey</p>
+        <p className="text-xs text-gray-400 mb-4">Rate your experience on each dimension below.</p>
+        {LIKERT_QUESTIONS.map((q) => (
+          <LikertScale
+            key={q.id}
+            question={q}
+            value={likert[q.id] || 0}
+            onChange={(v) => setLikert((prev) => ({ ...prev, [q.id]: v }))}
+          />
+        ))}
+      </div>
+
       <button
         onClick={handleFinalSubmit}
-        disabled={rating === 0 || isSubmitting}
+        disabled={!allAnswered || isSubmitting}
         className="w-full bg-gray-900 hover:bg-gray-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors text-sm"
       >
-        {isSubmitting ? "Submitting..." : rating === 0 ? "Select a confidence rating to continue" : "Submit & complete"}
+        {isSubmitting ? "Submitting..." : !allAnswered ? "Complete all fields to submit" : "Submit and complete"}
       </button>
 
       <p className="text-center text-xs text-gray-400 mt-4">
