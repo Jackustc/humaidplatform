@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
               <span className="font-semibold text-gray-900 tracking-tight">HUMAID Platform</span>
             </div>
-            <span className="text-xs text-gray-400 font-mono">Research Prototype v0.1</span>
+            <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v0.1</span>
           </div>
         </nav>
         <main className="max-w-5xl mx-auto px-6 py-10">{children}</main>
