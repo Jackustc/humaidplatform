@@ -27,7 +27,7 @@ function Skeleton() {
   return (
     <div className="animate-pulse space-y-3 py-2">
       {["w-2/3", "w-full", "w-5/6", "w-3/4", "w-full", "w-4/5"].map((w, i) => (
-        <div key={i} className={`h-3 bg-gray-100 rounded ${w}`} />
+        <div key={i} className={`h-3 bg-gray-100 dark:bg-gray-800 rounded ${w}`} />
       ))}
     </div>
   );
@@ -76,19 +76,19 @@ export default function CollaborativePage() {
       <div className="flex items-center justify-between mb-8">
       <a
         href="/task"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
         </svg>
         Back
       </a>
-      <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
+      <span className="font-mono text-xs text-gray-400 dark:text-gray-500 tabular-nums">{timer}</span>
       </div>
 
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Collaborative Mode</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Collaborative Mode</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Follow the pipeline — each agent hands off to the next.
         </p>
       </div>
@@ -103,7 +103,7 @@ export default function CollaborativePage() {
               <div className="flex items-center gap-2">
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all flex-shrink-0
-                    ${isDone ? "bg-gray-900 text-white" : isCurrent ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"}`}
+                    ${isDone ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900" : isCurrent ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900" : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"}`}
                 >
                   {isDone ? (
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -115,14 +115,14 @@ export default function CollaborativePage() {
                 </div>
                 <span
                   className={`text-xs hidden sm:inline ${
-                    isCurrent ? "text-gray-900 font-medium" : isDone ? "text-gray-500" : "text-gray-300"
+                    isCurrent ? "text-gray-900 dark:text-white font-medium" : isDone ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"
                   }`}
                 >
                   {label}
                 </span>
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`w-8 h-px mx-3 ${isDone ? "bg-gray-400" : "bg-gray-200"}`} />
+                <div className={`w-8 h-px mx-3 ${isDone ? "bg-gray-400 dark:bg-gray-600" : "bg-gray-200 dark:bg-gray-700"}`} />
               )}
             </div>
           );
@@ -133,33 +133,33 @@ export default function CollaborativePage() {
       {completedSteps.map((step) => {
         const info = STEPS.find((s) => s.step === step)!;
         return (
-          <div key={step} className="border border-gray-100 rounded-lg mb-3 overflow-hidden">
-            <div className="px-5 py-3 flex items-center justify-between bg-gray-50">
+          <div key={step} className="border border-gray-100 dark:border-gray-800 rounded-lg mb-3 overflow-hidden">
+            <div className="px-5 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center gap-2">
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-600 font-medium">
+                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   {info.agent.name} — {info.agent.role}
                 </span>
               </div>
-              <span className="text-xs text-gray-400">Completed</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">Completed</span>
             </div>
-            <div className="px-5 py-3">
+            <div className="px-5 py-3 bg-white dark:bg-gray-950">
               {step === 1 && (
                 <div className="flex flex-wrap gap-1.5">
                   {COLLABORATIVE.agent1.keywords.slice(0, 5).map((kw) => (
-                    <span key={kw} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                    <span key={kw} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
                       {kw}
                     </span>
                   ))}
-                  <span className="text-xs text-gray-400 py-0.5">
+                  <span className="text-xs text-gray-400 dark:text-gray-500 py-0.5">
                     +{COLLABORATIVE.agent1.keywords.length - 5} more
                   </span>
                 </div>
               )}
               {step === 2 && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {COLLABORATIVE.agent2.papers.length} papers retrieved.
                 </p>
               )}
@@ -172,15 +172,15 @@ export default function CollaborativePage() {
       {(() => {
         const info = STEPS.find((s) => s.step === currentStep)!;
         return (
-          <div className="border border-gray-300 rounded-lg overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-950">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900 text-sm">
+                <p className="font-medium text-gray-900 dark:text-white text-sm">
                   {info.agent.name} — {info.agent.role}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">{info.agent.description}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{info.agent.description}</p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded font-mono ${isLoading ? "text-gray-400" : "text-gray-600 bg-gray-100"}`}>
+              <span className={`text-xs px-2 py-0.5 rounded font-mono ${isLoading ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800"}`}>
                 {isLoading ? "Running..." : "Ready"}
               </span>
             </div>
@@ -193,14 +193,14 @@ export default function CollaborativePage() {
                   {/* Step 1 */}
                   {currentStep === 1 && (
                     <div>
-                      <p className="text-xs text-gray-400 mb-3">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
                         {COLLABORATIVE.agent1.keywords.length} keywords generated
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {COLLABORATIVE.agent1.keywords.map((kw) => (
                           <span
                             key={kw}
-                            className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded border border-gray-200"
+                            className="text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-1 rounded border border-gray-200 dark:border-gray-700"
                           >
                             {kw}
                           </span>
@@ -212,30 +212,30 @@ export default function CollaborativePage() {
                   {/* Step 2 */}
                   {currentStep === 2 && (
                     <div>
-                      <p className="text-xs text-gray-400 mb-3">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
                         {COLLABORATIVE.agent2.papers.length} papers found
                       </p>
                       <div className="space-y-3">
                         {COLLABORATIVE.agent2.papers.map((paper, i) => (
-                          <div key={i} className="border border-gray-100 rounded-lg p-4">
+                          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                             <div className="flex items-start justify-between gap-3 mb-1">
-                              <p className="text-sm font-medium text-gray-800 leading-snug">
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">
                                 {paper.title}
                               </p>
                               <span
                                 className={`text-xs px-2 py-0.5 rounded flex-shrink-0 font-medium border ${
                                   paper.relevance === "High"
-                                    ? "border-gray-300 text-gray-600 bg-gray-50"
-                                    : "border-gray-200 text-gray-400"
+                                    ? "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800"
+                                    : "border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
                                 }`}
                               >
                                 {paper.relevance}
                               </span>
                             </div>
-                            <p className="text-xs text-gray-400 mb-1.5">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mb-1.5">
                               {paper.authors} ({paper.year}) — <em>{paper.journal}</em>
                             </p>
-                            <p className="text-xs text-gray-600 leading-relaxed">{paper.summary}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{paper.summary}</p>
                           </div>
                         ))}
                       </div>
@@ -245,17 +245,17 @@ export default function CollaborativePage() {
                   {/* Step 3 */}
                   {currentStep === 3 && (
                     <div>
-                      <p className="text-xs text-gray-400 mb-3">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
                         Synthesized from {COLLABORATIVE.agent2.papers.length} papers. You may edit before submitting.
                       </p>
                       <textarea
                         value={finalText}
                         onChange={(e) => setFinalText(e.target.value)}
                         rows={13}
-                        className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                        className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg p-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed resize-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 transition-colors"
                       />
                       {finalText !== COLLABORATIVE.agent3.summary && (
-                        <p className="text-xs text-gray-400 mt-1.5">Modified from original</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Modified from original</p>
                       )}
                     </div>
                   )}
@@ -268,14 +268,14 @@ export default function CollaborativePage() {
                 {currentStep < 3 ? (
                   <button
                     onClick={advanceStep}
-                    className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
+                    className="bg-gray-900 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
                   >
                     {currentStep === 1 ? "Use these keywords" : "Use these papers"}
                   </button>
                 ) : (
                   <button
                     onClick={handleSubmit}
-                    className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
+                    className="bg-gray-900 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
                   >
                     Submit final answer
                   </button>

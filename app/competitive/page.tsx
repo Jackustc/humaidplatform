@@ -19,7 +19,7 @@ function Skeleton() {
   return (
     <div className="animate-pulse space-y-2.5 py-2">
       {["w-3/4", "w-full", "w-5/6", "w-2/3", "w-full", "w-4/5", "w-3/4", "w-full"].map((w, i) => (
-        <div key={i} className={`h-3 bg-gray-100 rounded ${w}`} />
+        <div key={i} className={`h-3 bg-gray-100 dark:bg-gray-800 rounded ${w}`} />
       ))}
     </div>
   );
@@ -66,31 +66,31 @@ export default function CompetitivePage() {
       <div className="flex items-center justify-between mb-8">
       <a
         href="/task"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
         </svg>
         Back
       </a>
-      <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
+      <span className="font-mono text-xs text-gray-400 dark:text-gray-500 tabular-nums">{timer}</span>
       </div>
 
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Competitive Mode</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Competitive Mode</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Three agents independently summarized the same literature. Read each and select the one you find most useful.
         </p>
       </div>
 
       {!isLoading && selectedId === null && (
-        <p className="text-xs text-gray-400 mb-5 border border-gray-100 rounded px-4 py-2.5 bg-gray-50">
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-5 border border-gray-100 dark:border-gray-800 rounded px-4 py-2.5 bg-gray-50 dark:bg-gray-900">
           Scroll through all three outputs before making your selection.
         </p>
       )}
 
       {!isLoading && selectedId !== null && (
-        <p className="text-xs text-gray-500 mb-5 border border-gray-200 rounded px-4 py-2.5 bg-gray-50">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 border border-gray-200 dark:border-gray-700 rounded px-4 py-2.5 bg-gray-50 dark:bg-gray-900">
           You selected {COMPETITIVE.find((a) => a.id === selectedId)?.name}. Scroll down to review and edit your submission.
         </p>
       )}
@@ -102,17 +102,17 @@ export default function CompetitivePage() {
           return (
             <div
               key={agent.id}
-              className={`border rounded-lg overflow-hidden transition-all ${
-                isSelected ? "border-gray-900 shadow-sm" : "border-gray-200 hover:border-gray-300"
+              className={`border rounded-lg overflow-hidden transition-all bg-white dark:bg-gray-950 ${
+                isSelected ? "border-gray-900 dark:border-white shadow-sm" : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
               }`}
             >
-              <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-2">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-gray-900 text-sm">{agent.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{agent.style}</p>
+                  <p className="font-medium text-gray-900 dark:text-white text-sm">{agent.name}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{agent.style}</p>
                 </div>
                 {isSelected && (
-                  <span className="text-xs bg-gray-900 text-white px-2 py-0.5 rounded font-medium flex-shrink-0">
+                  <span className="text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-2 py-0.5 rounded font-medium flex-shrink-0">
                     Selected
                   </span>
                 )}
@@ -122,7 +122,7 @@ export default function CompetitivePage() {
                 {isLoading ? (
                   <Skeleton />
                 ) : (
-                  <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto">
                     {agent.output}
                   </p>
                 )}
@@ -134,8 +134,8 @@ export default function CompetitivePage() {
                     onClick={() => selectAgent(agent.id, agent.output)}
                     className={`w-full text-sm font-medium py-2 rounded-md transition-colors ${
                       isSelected
-                        ? "bg-gray-900 text-white"
-                        : "border border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900"
+                        ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                        : "border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-gray-200"
                     }`}
                   >
                     {isSelected ? "Selected" : "Select this response"}
@@ -149,10 +149,10 @@ export default function CompetitivePage() {
 
       {/* Edit and submit */}
       {selectedId !== null && (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <p className="font-medium text-gray-900 text-sm">Your Submission</p>
-            <p className="text-xs text-gray-400 mt-0.5">
+        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-950">
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+            <p className="font-medium text-gray-900 dark:text-white text-sm">Your Submission</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
               Based on {COMPETITIVE.find((a) => a.id === selectedId)?.name}. You may edit before submitting.
             </p>
           </div>
@@ -161,16 +161,16 @@ export default function CompetitivePage() {
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
               rows={12}
-              className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
+              className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg p-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed resize-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 transition-colors"
             />
             {editedText !== COMPETITIVE.find((a) => a.id === selectedId)?.output && (
-              <p className="text-xs text-gray-400 mt-1.5">Modified from original</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Modified from original</p>
             )}
           </div>
           <div className="px-5 pb-5 flex justify-center">
             <button
               onClick={handleSubmit}
-              className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
+              className="bg-gray-900 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
             >
               Submit final answer
             </button>
