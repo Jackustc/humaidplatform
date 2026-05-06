@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HUMAID Platform
 
-## Getting Started
+**Human Multi-Agent AI Interaction Dynamics**
 
-First, run the development server:
+This is a research prototype built to support the HUMAID theoretical framework, which studies how a single human user interacts with a collection of AI agents. The platform is designed for academic experimentation and allows participants to complete a literature review task using multiple AI agents in two distinct interaction modes.
 
-```bash
+---
+
+## What This Platform Does
+
+The platform presents participants with a research task: conduct a literature review on Generative AI in Higher Education. Participants are given a choice between two modes of interacting with AI agents to complete this task.
+
+**Collaborative Mode**
+
+In this mode, three AI agents work in a sequential pipeline. Agent 1 generates a set of relevant search keywords. Agent 2 takes those keywords and retrieves a list of relevant academic papers. Agent 3 reads those papers and produces a synthesized literature review summary. The participant follows the pipeline step by step and can edit the final output before submitting.
+
+This mode demonstrates coordination, workflow delegation, and multi-agent collaboration.
+
+**Competitive Mode**
+
+In this mode, three AI agents tackle the same task independently and simultaneously. Each agent produces its own version of the literature review using a different writing style: one is analytical and structured, one is narrative and flowing, and one is critical and concise. The participant reads all three outputs, selects the one they prefer, edits it if they wish, and submits.
+
+This mode demonstrates comparison, trust, preference formation, and the cognitive dynamics of evaluating parallel AI outputs.
+
+---
+
+## What Gets Logged
+
+Every session captures the following data, which is written to a local JSON file at `logs/sessions.json` and printed to the server console.
+
+For all sessions: session ID, mode selected, task topic, start time, end time, final submission text, and whether the participant edited the AI output.
+
+For collaborative sessions: the timestamp at which the participant advanced each step.
+
+For competitive sessions: which agent was selected and at what time.
+
+For all sessions: a confidence rating from 1 to 5 that the participant provides before submitting.
+
+This data layer is designed to support future user studies. A database integration (Supabase) is planned for a later iteration.
+
+---
+
+## Tech Stack
+
+The application is built with Next.js 14 using the App Router. The UI is styled with Tailwind CSS. There is no external database in this prototype version. The AI agent outputs are currently hardcoded placeholders that simulate realistic responses. Real AI integration (Claude API and Semantic Scholar for paper retrieval) is planned for the next development phase.
+
+---
+
+## Running the Project Locally
+
+Make sure you have Node.js installed. Then run the following commands.
+
+```
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open your browser and go to http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+app/
+  page.tsx              Landing page with mode selection
+  collaborative/        Collaborative mode flow
+  competitive/          Competitive mode flow
+  submit/               Final submission and confidence rating
+  api/log/              Logging endpoint
+lib/
+  data.ts               All agent outputs and task configuration
+logs/
+  sessions.json         Interaction logs (created on first submission)
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Current (Week 1)**
+Fully functional prototype with hardcoded agent outputs, both interaction modes, and a working data logging endpoint.
 
-## Deploy on Vercel
+**Week 2**
+Integration of real AI agents using the Claude API. Agent 1 and Agent 3 will use Claude with role-specific system prompts. Agent 2 will retrieve real papers from the Semantic Scholar API.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Week 3**
+Database integration with Supabase to persist session logs. UI refinements based on feedback.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Week 4**
+End-to-end testing, edge case handling, and documentation for research deployment.
+
+---
+
+## Research Context
+
+This platform is built to support ongoing research on the HUMAID theoretical framework. The framework addresses a gap in existing human-AI interaction theory, which has primarily focused on one-to-one (dyadic) interactions between a human and a single AI. As multi-agent AI systems become more common, new dynamics emerge around information overload, inconsistent agent outputs, and social influence effects that existing models do not account for.
+
+The platform is intended for use in controlled user studies where participants are assigned to one of the two interaction modes and their behavior is observed and logged for analysis.
+
+For questions about the research, refer to the working paper on SSRN.
