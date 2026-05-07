@@ -118,7 +118,7 @@ export default function AdminPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    {["Session ID", "Mode", "Duration", "Agent", "Edited", "Orig→Final chars", "Events", "Prov: Agent %", "Confidence", "Trust", "Difficulty", "Satisfaction", "Effort", "Age", "Education"].map((h) => (
+                    {["Logged At", "Session ID", "Mode", "Duration", "Agent", "Edited", "Orig→Final chars", "Events", "Prov: Agent %", "Confidence", "Trust", "Difficulty", "Satisfaction", "Effort", "Age", "Education"].map((h) => (
                       <th key={h} className="text-left px-4 py-2.5 text-gray-400 font-medium whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -126,6 +126,9 @@ export default function AdminPage() {
                 <tbody>
                   {[...sessions].reverse().map((s) => (
                     <tr key={s.sessionId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
+                        {s.loggedAt ? new Date(s.loggedAt).toLocaleString() : "—"}
+                      </td>
                       <td className="px-4 py-2.5 font-mono text-gray-400 whitespace-nowrap">{s.sessionId?.slice(0, 18)}…</td>
                       <td className="px-4 py-2.5 capitalize text-gray-700">{s.mode}</td>
                       <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{s.startTime && s.endTime ? duration(s.startTime, s.endTime) : "—"}</td>
