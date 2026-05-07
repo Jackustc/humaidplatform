@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { COLLABORATIVE, TASK } from "@/lib/data";
+import { logEvent, getEvents } from "@/lib/event-logger";
+import { computeProvenance, summariseProvenance } from "@/lib/provenance";
 
 type Step = 1 | 2 | 3;
 
@@ -65,14 +67,49 @@ export default function CollaborativePage() {
   const [finalText, setFinalText] = useState(COLLABORATIVE.agent3.summary);
   const [stepTimestamps, setStepTimestamps] = useState<Record<number, string>>({});
   const submittingRef = useRef(false);
+  const viewStartRef = useRef<number | null>(null);
+  const editDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const activePanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setStepTimestamps({ 1: new Date().toISOString() });
-    const t = setTimeout(() => setIsLoading(false), 1800);
+    logEvent("session_start", { mode: "collaborative" });
+    const t = setTimeout(() => {
+      setIsLoading(false);
+      logEvent("agent_ready", { agentId: 1 });
+    }, 1800);
     return () => clearTimeout(t);
   }, []);
 
-  // Warn before unload (change 6)
+  // Dwell time tracking via IntersectionObserver
+  useEffect(() => {
+    const el = activePanelRef.current;
+    if (!el || isLoading) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          viewStartRef.current = Date.now();
+          logEvent("agent_view_start", { agentId: currentStep });
+        } else if (viewStartRef.current !== null) {
+          const dwellMs = Date.now() - viewStartRef.current;
+          logEvent("agent_view_end", { agentId: currentStep, dwellMs });
+          viewStartRef.current = null;
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => {
+      if (viewStartRef.current !== null) {
+        logEvent("agent_view_end", { agentId: currentStep, dwellMs: Date.now() - viewStartRef.current });
+        viewStartRef.current = null;
+      }
+      observer.disconnect();
+    };
+  }, [currentStep, isLoading]);
+
+  // Beforeunload warning
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (submittingRef.current) return;
@@ -83,18 +120,52 @@ export default function CollaborativePage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
+  function handleAgentCopy(agentId: number) {
+    const selectedText = window.getSelection()?.toString() ?? "";
+    if (selectedText.length > 2) {
+      logEvent("copy_from_agent", { agentId, textLength: selectedText.length, preview: selectedText.slice(0, 100) });
+    }
+  }
+
+  function handleTextareaPaste(e: React.ClipboardEvent) {
+    const pastedText = e.clipboardData.getData("text");
+    logEvent("paste_to_textarea", { textLength: pastedText.length, preview: pastedText.slice(0, 100) });
+  }
+
+  function handleTextareaChange(text: string) {
+    setFinalText(text);
+    clearTimeout(editDebounceRef.current);
+    editDebounceRef.current = setTimeout(() => {
+      logEvent("textarea_edit", { charCount: text.length, wordCount: wordCount(text) });
+    }, 1500);
+  }
+
   function advanceStep() {
+    logEvent("step_advance", { fromStep: currentStep, toStep: currentStep + 1 });
     const next = (currentStep + 1) as Step;
     setCompletedSteps((prev) => [...prev, currentStep]);
     setCurrentStep(next);
     setIsLoading(true);
     setStepTimestamps((prev) => ({ ...prev, [next]: new Date().toISOString() }));
-    setTimeout(() => setIsLoading(false), 1800);
+    setTimeout(() => {
+      setIsLoading(false);
+      logEvent("agent_ready", { agentId: next });
+    }, 1800);
   }
 
   function handleSubmit() {
     submittingRef.current = true;
     const original = COLLABORATIVE.agent3.summary;
+
+    // Provenance computation
+    const provenanceSpans = computeProvenance(finalText, [
+      { id: "agent_3_summary", text: COLLABORATIVE.agent3.summary },
+      { id: "agent_2_papers", text: COLLABORATIVE.agent2.papers.map((p) => p.summary).join(" ") },
+    ]);
+    const provenanceSummary = summariseProvenance(provenanceSpans);
+    logEvent("session_end", { provenanceSummary });
+
+    const events = getEvents();
     const sessionData = {
       sessionId: sessionStorage.getItem("humaid_session_id"),
       mode: "collaborative",
@@ -104,11 +175,13 @@ export default function CollaborativePage() {
       stepTimestamps,
       finalSubmission: finalText,
       wasEdited: finalText !== original,
-      // Change 2: character-level edit tracking
       originalLength: original.length,
       finalLength: finalText.length,
       charsAdded: Math.max(0, finalText.length - original.length),
       charsRemoved: Math.max(0, original.length - finalText.length),
+      provenanceSpans,
+      provenanceSummary,
+      events,
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
     router.push("/submit");
@@ -117,10 +190,7 @@ export default function CollaborativePage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <a
-          href="/task"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
-        >
+        <a href="/task" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
           </svg>
@@ -142,23 +212,16 @@ export default function CollaborativePage() {
           return (
             <div key={step} className="flex items-center">
               <div className="flex items-center gap-2">
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all flex-shrink-0
-                    ${isDone || isCurrent ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"}`}
-                >
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all flex-shrink-0 ${isDone || isCurrent ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"}`}>
                   {isDone ? (
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : step}
                 </div>
-                <span className={`text-xs hidden sm:inline ${isCurrent ? "text-gray-900 font-medium" : isDone ? "text-gray-500" : "text-gray-300"}`}>
-                  {label}
-                </span>
+                <span className={`text-xs hidden sm:inline ${isCurrent ? "text-gray-900 font-medium" : isDone ? "text-gray-500" : "text-gray-300"}`}>{label}</span>
               </div>
-              {i < STEPS.length - 1 && (
-                <div className={`w-8 h-px mx-3 ${isDone ? "bg-gray-400" : "bg-gray-200"}`} />
-              )}
+              {i < STEPS.length - 1 && <div className={`w-8 h-px mx-3 ${isDone ? "bg-gray-400" : "bg-gray-200"}`} />}
             </div>
           );
         })}
@@ -178,7 +241,10 @@ export default function CollaborativePage() {
               </div>
               <span className="text-xs text-gray-400">Completed</span>
             </div>
-            <div className="px-5 py-3">
+            <div
+              className="px-5 py-3"
+              onCopy={() => handleAgentCopy(step)}
+            >
               {step === 1 && (
                 <div className="flex flex-wrap gap-1.5">
                   {COLLABORATIVE.agent1.keywords.slice(0, 5).map((kw) => (
@@ -187,9 +253,7 @@ export default function CollaborativePage() {
                   <span className="text-xs text-gray-400 py-0.5">+{COLLABORATIVE.agent1.keywords.length - 5} more</span>
                 </div>
               )}
-              {step === 2 && (
-                <p className="text-xs text-gray-500">{COLLABORATIVE.agent2.papers.length} papers retrieved.</p>
-              )}
+              {step === 2 && <p className="text-xs text-gray-500">{COLLABORATIVE.agent2.papers.length} papers retrieved.</p>}
             </div>
           </div>
         );
@@ -199,7 +263,7 @@ export default function CollaborativePage() {
       {(() => {
         const info = STEPS.find((s) => s.step === currentStep)!;
         return (
-          <div className="border border-gray-300 rounded-lg overflow-hidden">
+          <div ref={activePanelRef} className="border border-gray-300 rounded-lg overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 text-sm">{info.agent.name} — {info.agent.role}</p>
@@ -210,10 +274,8 @@ export default function CollaborativePage() {
               </span>
             </div>
 
-            <div className="p-5">
-              {isLoading ? (
-                <Skeleton />
-              ) : (
+            <div className="p-5" onCopy={() => handleAgentCopy(currentStep)}>
+              {isLoading ? <Skeleton /> : (
                 <>
                   {currentStep === 1 && (
                     <div>
@@ -234,9 +296,7 @@ export default function CollaborativePage() {
                           <div key={i} className="border border-gray-100 rounded-lg p-4">
                             <div className="flex items-start justify-between gap-3 mb-1">
                               <p className="text-sm font-medium text-gray-800 leading-snug">{paper.title}</p>
-                              <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 font-medium border ${
-                                paper.relevance === "High" ? "border-gray-300 text-gray-600 bg-gray-50" : "border-gray-200 text-gray-400"
-                              }`}>
+                              <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 font-medium border ${paper.relevance === "High" ? "border-gray-300 text-gray-600 bg-gray-50" : "border-gray-200 text-gray-400"}`}>
                                 {paper.relevance}
                               </span>
                             </div>
@@ -250,25 +310,23 @@ export default function CollaborativePage() {
 
                   {currentStep === 3 && (
                     <div>
-                      {/* Change 1 & 7: word count + copy button */}
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs text-gray-400">
-                          Synthesized from {COLLABORATIVE.agent2.papers.length} papers. You may edit before submitting.
-                        </p>
+                        <p className="text-xs text-gray-400">Synthesized from {COLLABORATIVE.agent2.papers.length} papers. You may edit before submitting.</p>
                         <CopyButton getText={() => finalText} />
                       </div>
                       <textarea
                         value={finalText}
-                        onChange={(e) => setFinalText(e.target.value)}
+                        onChange={(e) => handleTextareaChange(e.target.value)}
+                        onPaste={handleTextareaPaste}
+                        onFocus={() => logEvent("textarea_focus", { agentId: 3 })}
+                        onBlur={() => logEvent("textarea_blur", { agentId: 3, charCount: finalText.length })}
                         rows={13}
                         className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
                       />
-                      <div className="flex items-center justify-between mt-1.5">
-                        <p className="text-xs text-gray-400">
-                          {finalText !== COLLABORATIVE.agent3.summary ? "Modified from original — " : ""}
-                          {wordCount(finalText)} words
-                        </p>
-                      </div>
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        {finalText !== COLLABORATIVE.agent3.summary ? "Modified from original — " : ""}
+                        {wordCount(finalText)} words
+                      </p>
                     </div>
                   )}
                 </>
@@ -278,17 +336,11 @@ export default function CollaborativePage() {
             {!isLoading && (
               <div className="px-5 pb-5 flex justify-center">
                 {currentStep < 3 ? (
-                  <button
-                    onClick={advanceStep}
-                    className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
-                  >
+                  <button onClick={advanceStep} className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors">
                     {currentStep === 1 ? "Use these keywords" : "Use these papers"}
                   </button>
                 ) : (
-                  <button
-                    onClick={handleSubmit}
-                    className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
-                  >
+                  <button onClick={handleSubmit} className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors">
                     Submit final answer
                   </button>
                 )}

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { COMPETITIVE, TASK } from "@/lib/data";
+import { logEvent, getEvents } from "@/lib/event-logger";
+import { computeProvenance, summariseProvenance } from "@/lib/provenance";
 
 function wordCount(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -55,17 +57,22 @@ export default function CompetitivePage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState("");
   const [selectionTime, setSelectionTime] = useState<string | null>(null);
-  // Change 3: track which cards have been scrolled to bottom
   const [scrolledIds, setScrolledIds] = useState<Set<number>>(new Set());
   const scrollRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const hoverStartRef = useRef<Map<number, number>>(new Map());
   const submittingRef = useRef(false);
+  const editDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 2200);
+    logEvent("session_start", { mode: "competitive" });
+    const t = setTimeout(() => {
+      setIsLoading(false);
+      logEvent("agents_ready", { agentCount: COMPETITIVE.length });
+    }, 2200);
     return () => clearTimeout(t);
   }, []);
 
-  // After loading, mark cards whose content is short enough to not require scrolling
+  // After load, auto-unlock cards too short to need scrolling
   useEffect(() => {
     if (!isLoading) {
       const timer = setTimeout(() => {
@@ -73,6 +80,7 @@ export default function CompetitivePage() {
           const el = scrollRefs.current.get(agent.id);
           if (el && el.scrollHeight <= el.clientHeight + 5) {
             setScrolledIds((prev) => new Set([...prev, agent.id]));
+            logEvent("agent_scroll", { agentId: agent.id, scrollDepthPct: 100, autoUnlocked: true });
           }
         });
       }, 100);
@@ -80,7 +88,7 @@ export default function CompetitivePage() {
     }
   }, [isLoading]);
 
-  // Change 6: warn before unload
+  // Beforeunload warning
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (submittingRef.current) return;
@@ -93,21 +101,68 @@ export default function CompetitivePage() {
 
   function handleCardScroll(agentId: number, e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
+    const depthPct = Math.round(((el.scrollTop + el.clientHeight) / el.scrollHeight) * 100);
+    logEvent("agent_scroll", { agentId, scrollDepthPct: depthPct });
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) {
       setScrolledIds((prev) => new Set([...prev, agentId]));
     }
+  }
+
+  function handleCardMouseEnter(agentId: number) {
+    hoverStartRef.current.set(agentId, Date.now());
+    logEvent("agent_hover_start", { agentId });
+  }
+
+  function handleCardMouseLeave(agentId: number) {
+    const start = hoverStartRef.current.get(agentId);
+    if (start !== undefined) {
+      const dwellMs = Date.now() - start;
+      logEvent("agent_hover_end", { agentId, dwellMs });
+      hoverStartRef.current.delete(agentId);
+    }
+  }
+
+  function handleAgentCopy(agentId: number) {
+    const selectedText = window.getSelection()?.toString() ?? "";
+    if (selectedText.length > 2) {
+      logEvent("copy_from_agent", { agentId, textLength: selectedText.length, preview: selectedText.slice(0, 100) });
+    }
+  }
+
+  function handleTextareaPaste(e: React.ClipboardEvent) {
+    const pastedText = e.clipboardData.getData("text");
+    logEvent("paste_to_textarea", { textLength: pastedText.length, preview: pastedText.slice(0, 100) });
+  }
+
+  function handleTextareaChange(text: string) {
+    setEditedText(text);
+    clearTimeout(editDebounceRef.current);
+    editDebounceRef.current = setTimeout(() => {
+      logEvent("textarea_edit", { charCount: text.length, wordCount: wordCount(text) });
+    }, 1500);
   }
 
   function selectAgent(id: number, output: string) {
     setSelectedId(id);
     setEditedText(output);
     setSelectionTime(new Date().toISOString());
+    logEvent("agent_selected", { agentId: id, agentName: COMPETITIVE.find((a) => a.id === id)?.name });
   }
 
   function handleSubmit() {
     submittingRef.current = true;
     const selected = COMPETITIVE.find((a) => a.id === selectedId);
     const original = selected?.output ?? "";
+
+    // Provenance: compare final text against ALL agent outputs
+    const provenanceSpans = computeProvenance(
+      editedText,
+      COMPETITIVE.map((a) => ({ id: `agent_${a.name.replace(/\s+/g, "_")}`, text: a.output }))
+    );
+    const provenanceSummary = summariseProvenance(provenanceSpans);
+    logEvent("session_end", { provenanceSummary });
+
+    const events = getEvents();
     const sessionData = {
       sessionId: sessionStorage.getItem("humaid_session_id"),
       mode: "competitive",
@@ -119,11 +174,13 @@ export default function CompetitivePage() {
       selectionTime,
       finalSubmission: editedText,
       wasEdited: editedText !== original,
-      // Change 2: character-level edit tracking
       originalLength: original.length,
       finalLength: editedText.length,
       charsAdded: Math.max(0, editedText.length - original.length),
       charsRemoved: Math.max(0, original.length - editedText.length),
+      provenanceSpans,
+      provenanceSummary,
+      events,
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
     router.push("/submit");
@@ -134,10 +191,7 @@ export default function CompetitivePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <a
-          href="/task"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
-        >
+        <a href="/task" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
           </svg>
@@ -148,16 +202,12 @@ export default function CompetitivePage() {
 
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Competitive Mode</h1>
-        <p className="text-sm text-gray-500">
-          Three agents independently summarized the same literature. Read each and select the one you find most useful.
-        </p>
+        <p className="text-sm text-gray-500">Three agents independently summarized the same literature. Read each and select the one you find most useful.</p>
       </div>
 
       {!isLoading && selectedId === null && (
         <p className="text-xs text-gray-400 mb-5 border border-gray-100 rounded px-4 py-2.5 bg-gray-50">
-          {allScrolled
-            ? "You have read all three outputs. Select the one you find most useful."
-            : "Scroll to the bottom of each agent's output before selecting."}
+          {allScrolled ? "You have read all three outputs. Select the one you find most useful." : "Scroll to the bottom of each agent's output before selecting."}
         </p>
       )}
 
@@ -175,9 +225,10 @@ export default function CompetitivePage() {
           return (
             <div
               key={agent.id}
-              className={`border rounded-lg overflow-hidden transition-all ${
-                isSelected ? "border-gray-900 shadow-sm" : "border-gray-200 hover:border-gray-300"
-              }`}
+              className={`border rounded-lg overflow-hidden transition-all ${isSelected ? "border-gray-900 shadow-sm" : "border-gray-200 hover:border-gray-300"}`}
+              onMouseEnter={() => handleCardMouseEnter(agent.id)}
+              onMouseLeave={() => handleCardMouseLeave(agent.id)}
+              onCopy={() => handleAgentCopy(agent.id)}
             >
               <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-2">
                 <div>
@@ -185,21 +236,13 @@ export default function CompetitivePage() {
                   <p className="text-xs text-gray-400 mt-0.5">{agent.style}</p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {/* Change 3: scroll indicator */}
-                  {!isLoading && !hasScrolled && (
-                    <span className="text-xs text-gray-300 font-medium">scroll ↓</span>
-                  )}
-                  {isSelected && (
-                    <span className="text-xs bg-gray-900 text-white px-2 py-0.5 rounded font-medium">Selected</span>
-                  )}
+                  {!isLoading && !hasScrolled && <span className="text-xs text-gray-300 font-medium">scroll ↓</span>}
+                  {isSelected && <span className="text-xs bg-gray-900 text-white px-2 py-0.5 rounded font-medium">Selected</span>}
                 </div>
               </div>
 
               <div className="p-4">
-                {isLoading ? (
-                  <Skeleton />
-                ) : (
-                  // Change 3: attach scroll ref and handler
+                {isLoading ? <Skeleton /> : (
                   <div
                     ref={(el) => { scrollRefs.current.set(agent.id, el); }}
                     onScroll={(e) => handleCardScroll(agent.id, e)}
@@ -212,17 +255,14 @@ export default function CompetitivePage() {
 
               {!isLoading && (
                 <div className="px-4 pb-4">
-                  {/* Change 3: disable button until card is scrolled */}
                   <button
                     onClick={() => hasScrolled && selectAgent(agent.id, agent.output)}
                     disabled={!hasScrolled}
                     title={!hasScrolled ? "Scroll through the full output first" : undefined}
                     className={`w-full text-sm font-medium py-2 rounded-md transition-colors ${
-                      isSelected
-                        ? "bg-gray-900 text-white"
-                        : hasScrolled
-                        ? "border border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900"
-                        : "border border-gray-100 text-gray-300 cursor-not-allowed"
+                      isSelected ? "bg-gray-900 text-white"
+                      : hasScrolled ? "border border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900"
+                      : "border border-gray-100 text-gray-300 cursor-not-allowed"
                     }`}
                   >
                     {isSelected ? "Selected" : hasScrolled ? "Select this response" : "Read to unlock"}
@@ -239,34 +279,28 @@ export default function CompetitivePage() {
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
             <p className="font-medium text-gray-900 text-sm">Your Submission</p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Based on {COMPETITIVE.find((a) => a.id === selectedId)?.name}. You may edit before submitting.
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">Based on {COMPETITIVE.find((a) => a.id === selectedId)?.name}. You may edit before submitting.</p>
           </div>
           <div className="p-5">
-            {/* Change 7: copy button */}
             <div className="flex justify-end mb-2">
               <CopyButton getText={() => editedText} />
             </div>
             <textarea
               value={editedText}
-              onChange={(e) => setEditedText(e.target.value)}
+              onChange={(e) => handleTextareaChange(e.target.value)}
+              onPaste={handleTextareaPaste}
+              onFocus={() => logEvent("textarea_focus", { agentId: selectedId })}
+              onBlur={() => logEvent("textarea_blur", { agentId: selectedId, charCount: editedText.length })}
               rows={12}
               className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
-            {/* Change 1: word count */}
-            <div className="flex items-center justify-between mt-1.5">
-              <p className="text-xs text-gray-400">
-                {editedText !== COMPETITIVE.find((a) => a.id === selectedId)?.output ? "Modified from original — " : ""}
-                {wordCount(editedText)} words
-              </p>
-            </div>
+            <p className="text-xs text-gray-400 mt-1.5">
+              {editedText !== COMPETITIVE.find((a) => a.id === selectedId)?.output ? "Modified from original — " : ""}
+              {wordCount(editedText)} words
+            </p>
           </div>
           <div className="px-5 pb-5 flex justify-center">
-            <button
-              onClick={handleSubmit}
-              className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
-            >
+            <button onClick={handleSubmit} className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors">
               Submit final answer
             </button>
           </div>

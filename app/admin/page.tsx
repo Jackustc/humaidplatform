@@ -17,6 +17,8 @@ type Session = {
   confidenceRating: number;
   postTaskSurvey: Survey;
   demographics?: { ageRange: string; education: string; aiFamiliarity: string; fieldOfStudy: string };
+  provenanceSummary?: Record<string, number>;
+  events?: unknown[];
   loggedAt: string;
 };
 
@@ -48,10 +50,18 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="mb-8">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Research Data</p>
-        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Session Dashboard</h1>
-        <p className="text-sm text-gray-500">All recorded participant sessions.</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Research Data</p>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Session Dashboard</h1>
+          <p className="text-sm text-gray-500">All recorded participant sessions.</p>
+        </div>
+        <a
+          href="/api/export"
+          className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
+        >
+          Export CSV
+        </a>
       </div>
 
       {loading ? (
@@ -108,7 +118,7 @@ export default function AdminPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    {["Session ID", "Mode", "Duration", "Agent", "Edited", "Orig→Final chars", "Confidence", "Trust", "Difficulty", "Satisfaction", "Effort", "Age", "Education"].map((h) => (
+                    {["Session ID", "Mode", "Duration", "Agent", "Edited", "Orig→Final chars", "Events", "Prov: Agent %", "Confidence", "Trust", "Difficulty", "Satisfaction", "Effort", "Age", "Education"].map((h) => (
                       <th key={h} className="text-left px-4 py-2.5 text-gray-400 font-medium whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -127,6 +137,16 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
                         {s.originalLength != null ? `${s.originalLength} → ${s.finalLength}` : "—"}
+                      </td>
+                      <td className="px-4 py-2.5 text-center text-gray-500">{s.events?.length ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-center text-gray-500">
+                        {s.provenanceSummary
+                          ? (() => {
+                              const total = Object.values(s.provenanceSummary).reduce((a, b) => a + b, 0);
+                              const agent = Object.entries(s.provenanceSummary).filter(([k]) => k !== "user_typed").reduce((a, [, v]) => a + v, 0);
+                              return total > 0 ? `${Math.round((agent / total) * 100)}%` : "—";
+                            })()
+                          : "—"}
                       </td>
                       <td className="px-4 py-2.5 text-center text-gray-700">{s.confidenceRating ?? "—"}</td>
                       <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.trust ?? "—"}</td>

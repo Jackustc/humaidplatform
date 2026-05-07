@@ -22,12 +22,12 @@ export default function InstructionsPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">
+      <div className="mb-8 text-center">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
           {mode === "collaborative" ? "Collaborative Mode" : "Competitive Mode"}
         </p>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">Before You Begin</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Read the instructions carefully before starting.</p>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Before You Begin</h1>
+        <p className="text-sm text-gray-500">Read the instructions carefully before starting.</p>
       </div>
 
       {mode === "collaborative" ? (
