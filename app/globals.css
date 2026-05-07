@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Disable OS-level dark mode detection — dark: classes are inert unless .dark class is present */
+@custom-variant dark (&:where(.dark, .dark *));
+
 body {
   background: #ffffff;
   color: #111827;
