@@ -1,0 +1,16 @@
+[
+  {
+    "sessionId": "sess_1778094820056_6yllt91",
+    "mode": "competitive",
+    "task": "Generative AI in Higher Education",
+    "startTime": "2026-05-06T19:33:45.806Z",
+    "endTime": "2026-05-06T19:33:54.044Z",
+    "selectedAgent": 1,
+    "selectedAgentName": "Agent A",
+    "selectionTime": "2026-05-06T19:33:51.412Z",
+    "finalSubmission": "Overview\nGenerative AI has introduced a paradigm shift in higher education, offering measurable improvements in learning outcomes when deployed thoughtfully. The literature consistently identifies three primary domains of impact: personalized instruction, assessment transformation, and administrative efficiency.\n\nKey Findings\n• LLMs enable real-time, personalized feedback at scale, addressing longstanding limitations of large-class instruction (Kasneci et al., 2023)\n• Faculty-designed AI integration strategies can preserve academic rigor while enhancing student agency (Mollick & Mollick, 2023)\n• Institutional frameworks for AI governance are nascent but rapidly developing (Baidoo-Anu & Ansah, 2023)\n\nChallenges Identified\nAcademic integrity concerns remain the most frequently cited barrier to adoption. Cotton et al. (2023) document a significant increase in AI-assisted submissions across institutions. However, the literature suggests this challenge is addressable through redesigned assessment structures rather than blanket prohibition.\n\nConclusion\nThe evidence base supports cautious, structured integration of generative AI in higher education. Institutions that proactively develop AI-inclusive pedagogical frameworks are better positioned to harness benefits while mitigating risks associated with over-reliance and academic dishonesty.",
+    "wasEdited": false,
+    "confidenceRating": 2,
+    "loggedAt": "2026-05-06T19:33:58.937Z"
+  }
+]

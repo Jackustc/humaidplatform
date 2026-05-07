@@ -11,6 +11,10 @@ type SessionData = {
   endTime: string;
   finalSubmission: string;
   wasEdited: boolean;
+  originalLength?: number;
+  finalLength?: number;
+  charsAdded?: number;
+  charsRemoved?: number;
   selectedAgent?: number;
   selectedAgentName?: string;
 };
@@ -32,10 +36,10 @@ function LikertScale({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="py-4 border-b border-gray-100 dark:border-gray-800 last:border-0">
-      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">{question.label}</p>
+    <div className="py-4 border-b border-gray-100 last:border-0">
+      <p className="text-sm font-medium text-gray-800 mb-3">{question.label}</p>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-400 dark:text-gray-500 w-24 text-right leading-tight">{question.low}</span>
+        <span className="text-xs text-gray-400 w-24 text-right leading-tight">{question.low}</span>
         <div className="flex gap-2 flex-1 justify-center">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -43,17 +47,37 @@ function LikertScale({
               onClick={() => onChange(n)}
               className={`w-9 h-9 rounded-full text-sm font-medium border transition-all ${
                 value === n
-                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white"
-                  : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "border-gray-200 text-gray-500 hover:border-gray-400"
               }`}
             >
               {n}
             </button>
           ))}
         </div>
-        <span className="text-xs text-gray-400 dark:text-gray-500 w-24 leading-tight">{question.high}</span>
+        <span className="text-xs text-gray-400 w-24 leading-tight">{question.high}</span>
       </div>
     </div>
+  );
+}
+
+// Change 7: copy button component
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 hover:border-gray-400 px-2.5 py-1 rounded transition-colors"
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
   );
 }
 
@@ -70,8 +94,7 @@ export default function SubmitPage() {
     if (raw) setData(JSON.parse(raw));
   }, []);
 
-  const allAnswered =
-    rating > 0 && LIKERT_QUESTIONS.every((q) => likert[q.id] > 0);
+  const allAnswered = rating > 0 && LIKERT_QUESTIONS.every((q) => likert[q.id] > 0);
 
   async function handleFinalSubmit() {
     if (!allAnswered) return;
@@ -98,8 +121,8 @@ export default function SubmitPage() {
   if (!data) {
     return (
       <div className="max-w-3xl mx-auto text-center py-20">
-        <p className="text-sm text-gray-400 dark:text-gray-500">No session data found.</p>
-        <Link href="/" className="text-gray-700 dark:text-gray-300 underline text-sm mt-2 inline-block">Return to home</Link>
+        <p className="text-sm text-gray-400">No session data found.</p>
+        <Link href="/" className="text-gray-700 underline text-sm mt-2 inline-block">Return to home</Link>
       </div>
     );
   }
@@ -112,51 +135,57 @@ export default function SubmitPage() {
     return (
       <div className="max-w-3xl mx-auto py-16">
         <div className="mb-8">
-          <div className="w-10 h-10 border-2 border-gray-900 dark:border-white rounded-full flex items-center justify-center mb-5">
-            <svg className="w-5 h-5 text-gray-900 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 border-2 border-gray-900 rounded-full flex items-center justify-center mb-5">
+            <svg className="w-5 h-5 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Submission recorded</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Thank you for participating in this study.</p>
+          <h1 className="text-xl font-semibold text-gray-900 mb-1">Submission recorded</h1>
+          <p className="text-sm text-gray-500">Thank you for participating in this study.</p>
         </div>
 
-        <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 text-sm space-y-2 mb-8 bg-white dark:bg-gray-900">
+        <div className="border border-gray-200 rounded-lg p-5 text-sm space-y-2 mb-8">
           <div className="flex justify-between">
-            <span className="text-gray-400 dark:text-gray-500 text-xs">Mode</span>
-            <span className="text-xs font-medium capitalize text-gray-900 dark:text-white">{data.mode}</span>
+            <span className="text-gray-400 text-xs">Mode</span>
+            <span className="text-xs font-medium capitalize">{data.mode}</span>
           </div>
           {data.selectedAgentName && (
             <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-500 text-xs">Selected agent</span>
-              <span className="text-xs font-medium text-gray-900 dark:text-white">{data.selectedAgentName}</span>
+              <span className="text-gray-400 text-xs">Selected agent</span>
+              <span className="text-xs font-medium">{data.selectedAgentName}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-gray-400 dark:text-gray-500 text-xs">Confidence rating</span>
-            <span className="text-xs font-medium text-gray-900 dark:text-white">{rating} / 5</span>
+            <span className="text-gray-400 text-xs">Confidence rating</span>
+            <span className="text-xs font-medium">{rating} / 5</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400 dark:text-gray-500 text-xs">Response edited</span>
-            <span className="text-xs font-medium text-gray-900 dark:text-white">{data.wasEdited ? "Yes" : "No"}</span>
+            <span className="text-gray-400 text-xs">Response edited</span>
+            <span className="text-xs font-medium">{data.wasEdited ? "Yes" : "No"}</span>
           </div>
+          {data.wasEdited && data.charsAdded != null && (
+            <div className="flex justify-between">
+              <span className="text-gray-400 text-xs">Characters added / removed</span>
+              <span className="text-xs font-medium">+{data.charsAdded} / -{data.charsRemoved}</span>
+            </div>
+          )}
           {durationSec !== null && (
             <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-500 text-xs">Duration</span>
-              <span className="text-xs font-medium text-gray-900 dark:text-white">
+              <span className="text-gray-400 text-xs">Duration</span>
+              <span className="text-xs font-medium">
                 {durationSec < 60 ? `${durationSec}s` : `${Math.round(durationSec / 60)}m`}
               </span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-gray-400 dark:text-gray-500 text-xs">Session ID</span>
-            <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{data.sessionId}</span>
+            <span className="text-gray-400 text-xs">Session ID</span>
+            <span className="text-xs font-mono text-gray-500">{data.sessionId}</span>
           </div>
         </div>
 
         <Link
           href="/"
-          className="inline-block border border-gray-300 dark:border-gray-700 hover:border-gray-500 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300 text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
+          className="inline-block border border-gray-300 hover:border-gray-500 text-gray-700 text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
         >
           Start a new session
         </Link>
@@ -167,35 +196,36 @@ export default function SubmitPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Review and Submit</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Review your answer and complete the short survey before submitting.</p>
+        <h1 className="text-xl font-semibold text-gray-900 mb-1">Review and Submit</h1>
+        <p className="text-sm text-gray-500">Review your answer and complete the short survey before submitting.</p>
       </div>
 
       {/* Metadata */}
       <div className="flex flex-wrap gap-2 mb-6 text-xs">
-        <span className="border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1 text-gray-500 dark:text-gray-400 capitalize">{data.mode} mode</span>
+        <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500 capitalize">{data.mode} mode</span>
         {data.selectedAgentName && (
-          <span className="border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1 text-gray-500 dark:text-gray-400">Selected: {data.selectedAgentName}</span>
+          <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500">Selected: {data.selectedAgentName}</span>
         )}
         {data.wasEdited && (
-          <span className="border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1 text-gray-500 dark:text-gray-400">Edited</span>
+          <span className="border border-gray-200 rounded px-2.5 py-1 text-gray-500">Edited</span>
         )}
       </div>
 
-      {/* Final submission */}
-      <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden mb-6 bg-white dark:bg-gray-950">
-        <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest">Your Submission</p>
+      {/* Final submission — Change 7: copy button */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
+        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-widest">Your Submission</p>
+          <CopyButton text={data.finalSubmission} />
         </div>
         <div className="p-5">
-          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{data.finalSubmission}</p>
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{data.finalSubmission}</p>
         </div>
       </div>
 
       {/* Confidence rating */}
-      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-6 bg-white dark:bg-gray-950">
-        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">How confident are you in this submission?</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">1 = not confident, 5 = very confident</p>
+      <div className="border border-gray-200 rounded-lg p-5 mb-6">
+        <p className="text-sm font-medium text-gray-900 mb-1">How confident are you in this submission?</p>
+        <p className="text-xs text-gray-400 mb-4">1 = not confident, 5 = very confident</p>
         <div className="flex gap-2 mb-2">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
@@ -206,7 +236,7 @@ export default function SubmitPage() {
               className="focus:outline-none"
             >
               <svg
-                className={`w-8 h-8 transition-colors ${star <= (hoverRating || rating) ? "text-gray-900 dark:text-white" : "text-gray-200 dark:text-gray-700"}`}
+                className={`w-8 h-8 transition-colors ${star <= (hoverRating || rating) ? "text-gray-900" : "text-gray-200"}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -216,16 +246,16 @@ export default function SubmitPage() {
           ))}
         </div>
         {rating > 0 && (
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-gray-400">
             {["", "Not confident", "Slightly confident", "Moderately confident", "Quite confident", "Very confident"][rating]}
           </p>
         )}
       </div>
 
       {/* Post-task survey */}
-      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-6 bg-white dark:bg-gray-950">
-        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Quick survey</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Rate your experience on each dimension below.</p>
+      <div className="border border-gray-200 rounded-lg p-5 mb-6">
+        <p className="text-sm font-medium text-gray-900 mb-1">Quick survey</p>
+        <p className="text-xs text-gray-400 mb-4">Rate your experience on each dimension below.</p>
         {LIKERT_QUESTIONS.map((q) => (
           <LikertScale
             key={q.id}
@@ -239,12 +269,12 @@ export default function SubmitPage() {
       <button
         onClick={handleFinalSubmit}
         disabled={!allAnswered || isSubmitting}
-        className="w-full bg-gray-900 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors text-sm"
+        className="w-full bg-gray-900 hover:bg-gray-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors text-sm"
       >
         {isSubmitting ? "Submitting..." : !allAnswered ? "Complete all fields to submit" : "Submit and complete"}
       </button>
 
-      <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
+      <p className="text-center text-xs text-gray-400 mt-4">
         Your response is logged anonymously for research purposes.
       </p>
     </div>

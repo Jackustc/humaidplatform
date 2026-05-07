@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { COMPETITIVE, TASK } from "@/lib/data";
+
+function wordCount(text: string) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
 
 function useTimer() {
   const [seconds, setSeconds] = useState(0);
@@ -19,9 +23,28 @@ function Skeleton() {
   return (
     <div className="animate-pulse space-y-2.5 py-2">
       {["w-3/4", "w-full", "w-5/6", "w-2/3", "w-full", "w-4/5", "w-3/4", "w-full"].map((w, i) => (
-        <div key={i} className={`h-3 bg-gray-100 dark:bg-gray-800 rounded ${w}`} />
+        <div key={i} className={`h-3 bg-gray-100 rounded ${w}`} />
       ))}
     </div>
+  );
+}
+
+function CopyButton({ getText }: { getText: () => string }) {
+  const [copied, setCopied] = useState(false);
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(getText());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 hover:border-gray-400 px-2.5 py-1 rounded transition-colors"
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
   );
 }
 
@@ -32,10 +55,48 @@ export default function CompetitivePage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState("");
   const [selectionTime, setSelectionTime] = useState<string | null>(null);
+  // Change 3: track which cards have been scrolled to bottom
+  const [scrolledIds, setScrolledIds] = useState<Set<number>>(new Set());
+  const scrollRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const submittingRef = useRef(false);
+
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 2200);
     return () => clearTimeout(t);
   }, []);
+
+  // After loading, mark cards whose content is short enough to not require scrolling
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => {
+        COMPETITIVE.forEach((agent) => {
+          const el = scrollRefs.current.get(agent.id);
+          if (el && el.scrollHeight <= el.clientHeight + 5) {
+            setScrolledIds((prev) => new Set([...prev, agent.id]));
+          }
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  // Change 6: warn before unload
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (submittingRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  function handleCardScroll(agentId: number, e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) {
+      setScrolledIds((prev) => new Set([...prev, agentId]));
+    }
+  }
 
   function selectAgent(id: number, output: string) {
     setSelectedId(id);
@@ -44,7 +105,9 @@ export default function CompetitivePage() {
   }
 
   function handleSubmit() {
+    submittingRef.current = true;
     const selected = COMPETITIVE.find((a) => a.id === selectedId);
+    const original = selected?.output ?? "";
     const sessionData = {
       sessionId: sessionStorage.getItem("humaid_session_id"),
       mode: "competitive",
@@ -55,42 +118,51 @@ export default function CompetitivePage() {
       selectedAgentName: selected?.name,
       selectionTime,
       finalSubmission: editedText,
-      wasEdited: editedText !== selected?.output,
+      wasEdited: editedText !== original,
+      // Change 2: character-level edit tracking
+      originalLength: original.length,
+      finalLength: editedText.length,
+      charsAdded: Math.max(0, editedText.length - original.length),
+      charsRemoved: Math.max(0, original.length - editedText.length),
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
     router.push("/submit");
   }
 
+  const allScrolled = COMPETITIVE.every((a) => scrolledIds.has(a.id));
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-      <a
-        href="/task"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </a>
-      <span className="font-mono text-xs text-gray-400 dark:text-gray-500 tabular-nums">{timer}</span>
+        <a
+          href="/task"
+          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </a>
+        <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
       </div>
 
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Competitive Mode</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <h1 className="text-xl font-semibold text-gray-900 mb-1">Competitive Mode</h1>
+        <p className="text-sm text-gray-500">
           Three agents independently summarized the same literature. Read each and select the one you find most useful.
         </p>
       </div>
 
       {!isLoading && selectedId === null && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mb-5 border border-gray-100 dark:border-gray-800 rounded px-4 py-2.5 bg-gray-50 dark:bg-gray-900">
-          Scroll through all three outputs before making your selection.
+        <p className="text-xs text-gray-400 mb-5 border border-gray-100 rounded px-4 py-2.5 bg-gray-50">
+          {allScrolled
+            ? "You have read all three outputs. Select the one you find most useful."
+            : "Scroll to the bottom of each agent's output before selecting."}
         </p>
       )}
 
       {!isLoading && selectedId !== null && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 border border-gray-200 dark:border-gray-700 rounded px-4 py-2.5 bg-gray-50 dark:bg-gray-900">
+        <p className="text-xs text-gray-500 mb-5 border border-gray-200 rounded px-4 py-2.5 bg-gray-50">
           You selected {COMPETITIVE.find((a) => a.id === selectedId)?.name}. Scroll down to review and edit your submission.
         </p>
       )}
@@ -99,46 +171,61 @@ export default function CompetitivePage() {
       <div className="grid lg:grid-cols-3 gap-4 mb-8">
         {COMPETITIVE.map((agent) => {
           const isSelected = selectedId === agent.id;
+          const hasScrolled = scrolledIds.has(agent.id);
           return (
             <div
               key={agent.id}
-              className={`border rounded-lg overflow-hidden transition-all bg-white dark:bg-gray-950 ${
-                isSelected ? "border-gray-900 dark:border-white shadow-sm" : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
+              className={`border rounded-lg overflow-hidden transition-all ${
+                isSelected ? "border-gray-900 shadow-sm" : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-start justify-between gap-2">
+              <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white text-sm">{agent.name}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{agent.style}</p>
+                  <p className="font-medium text-gray-900 text-sm">{agent.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{agent.style}</p>
                 </div>
-                {isSelected && (
-                  <span className="text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-2 py-0.5 rounded font-medium flex-shrink-0">
-                    Selected
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {/* Change 3: scroll indicator */}
+                  {!isLoading && !hasScrolled && (
+                    <span className="text-xs text-gray-300 font-medium">scroll ↓</span>
+                  )}
+                  {isSelected && (
+                    <span className="text-xs bg-gray-900 text-white px-2 py-0.5 rounded font-medium">Selected</span>
+                  )}
+                </div>
               </div>
 
               <div className="p-4">
                 {isLoading ? (
                   <Skeleton />
                 ) : (
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto">
+                  // Change 3: attach scroll ref and handler
+                  <div
+                    ref={(el) => { scrollRefs.current.set(agent.id, el); }}
+                    onScroll={(e) => handleCardScroll(agent.id, e)}
+                    className="text-xs text-gray-600 leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto"
+                  >
                     {agent.output}
-                  </p>
+                  </div>
                 )}
               </div>
 
               {!isLoading && (
                 <div className="px-4 pb-4">
+                  {/* Change 3: disable button until card is scrolled */}
                   <button
-                    onClick={() => selectAgent(agent.id, agent.output)}
+                    onClick={() => hasScrolled && selectAgent(agent.id, agent.output)}
+                    disabled={!hasScrolled}
+                    title={!hasScrolled ? "Scroll through the full output first" : undefined}
                     className={`w-full text-sm font-medium py-2 rounded-md transition-colors ${
                       isSelected
-                        ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                        : "border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-gray-200"
+                        ? "bg-gray-900 text-white"
+                        : hasScrolled
+                        ? "border border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900"
+                        : "border border-gray-100 text-gray-300 cursor-not-allowed"
                     }`}
                   >
-                    {isSelected ? "Selected" : "Select this response"}
+                    {isSelected ? "Selected" : hasScrolled ? "Select this response" : "Read to unlock"}
                   </button>
                 </div>
               )}
@@ -149,28 +236,36 @@ export default function CompetitivePage() {
 
       {/* Edit and submit */}
       {selectedId !== null && (
-        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-950">
-          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-            <p className="font-medium text-gray-900 dark:text-white text-sm">Your Submission</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <p className="font-medium text-gray-900 text-sm">Your Submission</p>
+            <p className="text-xs text-gray-400 mt-0.5">
               Based on {COMPETITIVE.find((a) => a.id === selectedId)?.name}. You may edit before submitting.
             </p>
           </div>
           <div className="p-5">
+            {/* Change 7: copy button */}
+            <div className="flex justify-end mb-2">
+              <CopyButton getText={() => editedText} />
+            </div>
             <textarea
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
               rows={12}
-              className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg p-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed resize-none focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 transition-colors"
+              className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
-            {editedText !== COMPETITIVE.find((a) => a.id === selectedId)?.output && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Modified from original</p>
-            )}
+            {/* Change 1: word count */}
+            <div className="flex items-center justify-between mt-1.5">
+              <p className="text-xs text-gray-400">
+                {editedText !== COMPETITIVE.find((a) => a.id === selectedId)?.output ? "Modified from original — " : ""}
+                {wordCount(editedText)} words
+              </p>
+            </div>
           </div>
           <div className="px-5 pb-5 flex justify-center">
             <button
               onClick={handleSubmit}
-              className="bg-gray-900 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
+              className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors"
             >
               Submit final answer
             </button>

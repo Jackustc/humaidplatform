@@ -41,47 +41,45 @@ export default function ConsentPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-1 tracking-tight">
           Participant Information and Consent
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Please read the following before taking part in this study.
         </p>
       </div>
 
-      {/* Study info */}
-      <div className="border border-gray-200 rounded-lg p-5 mb-6 space-y-3">
+      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-6 space-y-3">
         <div>
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">About This Study</p>
-          <p className="text-sm text-gray-700 leading-relaxed">
+          <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">About This Study</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
             This study examines how people interact with multiple AI agents to complete a literature review task.
             You will be asked to work with AI agents in one of two modes and submit a final written response.
             The session takes approximately 10 to 15 minutes.
           </p>
         </div>
         <div>
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Data and Privacy</p>
-          <p className="text-sm text-gray-700 leading-relaxed">
+          <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Data and Privacy</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
             Your responses are recorded anonymously. No personally identifiable information is collected.
             Session data including your final submission, time taken, and interaction patterns will be used
             for academic research purposes only.
           </p>
         </div>
         <div>
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Participation</p>
-          <p className="text-sm text-gray-700 leading-relaxed">
+          <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Participation</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
             Participation is voluntary. You may stop at any time without consequence.
           </p>
         </div>
       </div>
 
-      {/* Demographics */}
-      <div className="border border-gray-200 rounded-lg p-5 mb-6">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-4">About You</p>
+      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-6">
+        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">About You</p>
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1.5">Age range</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Age range</label>
             <div className="grid grid-cols-3 gap-2">
               {AGE_RANGES.map((range) => (
                 <button
@@ -89,8 +87,8 @@ export default function ConsentPage() {
                   onClick={() => setDemographics((d) => ({ ...d, ageRange: range }))}
                   className={`text-xs py-2 px-3 rounded border transition-colors ${
                     demographics.ageRange === range
-                      ? "border-gray-900 bg-gray-900 text-white"
-                      : "border-gray-200 text-gray-600 hover:border-gray-400"
+                      ? "border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900"
+                      : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
                   }`}
                 >
                   {range}
@@ -100,7 +98,7 @@ export default function ConsentPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1.5">Education level</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Education level</label>
             <div className="grid grid-cols-2 gap-2">
               {EDUCATION_LEVELS.map((level) => (
                 <button
@@ -108,8 +106,8 @@ export default function ConsentPage() {
                   onClick={() => setDemographics((d) => ({ ...d, education: level }))}
                   className={`text-xs py-2 px-3 rounded border transition-colors text-left ${
                     demographics.education === level
-                      ? "border-gray-900 bg-gray-900 text-white"
-                      : "border-gray-200 text-gray-600 hover:border-gray-400"
+                      ? "border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900"
+                      : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
                   }`}
                 >
                   {level}
@@ -119,7 +117,7 @@ export default function ConsentPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1.5">Familiarity with AI tools</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Familiarity with AI tools</label>
             <div className="space-y-2">
               {AI_FAMILIARITY.map((level) => (
                 <button
@@ -127,8 +125,8 @@ export default function ConsentPage() {
                   onClick={() => setDemographics((d) => ({ ...d, aiFamiliarity: level }))}
                   className={`w-full text-xs py-2 px-3 rounded border transition-colors text-left ${
                     demographics.aiFamiliarity === level
-                      ? "border-gray-900 bg-gray-900 text-white"
-                      : "border-gray-200 text-gray-600 hover:border-gray-400"
+                      ? "border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900"
+                      : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
                   }`}
                 >
                   {level}
@@ -138,22 +136,21 @@ export default function ConsentPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1.5">
-              Field of study or work <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">
+              Field of study or work <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               placeholder="e.g. Information Systems, Computer Science, Management"
               value={demographics.fieldOfStudy}
               onChange={(e) => setDemographics((d) => ({ ...d, fieldOfStudy: e.target.value }))}
-              className="w-full border border-gray-200 rounded px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition-colors"
+              className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded px-3 py-2 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 transition-colors"
             />
           </div>
         </div>
       </div>
 
-      {/* Consent checkbox */}
-      <div className="border border-gray-200 rounded-lg p-5 mb-6">
+      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-6">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
@@ -161,7 +158,7 @@ export default function ConsentPage() {
             onChange={(e) => setConsent(e.target.checked)}
             className="mt-0.5 w-4 h-4 accent-gray-900 flex-shrink-0"
           />
-          <span className="text-sm text-gray-700 leading-relaxed">
+          <span className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
             I have read the information above and agree to participate in this study. I understand my
             data will be used for academic research and that I may withdraw at any time.
           </span>
@@ -171,12 +168,12 @@ export default function ConsentPage() {
       <button
         onClick={handleBegin}
         disabled={!isComplete}
-        className="w-full bg-gray-900 hover:bg-gray-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors text-sm"
+        className="w-full bg-gray-900 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors text-sm"
       >
         {isComplete ? "Begin Study" : "Complete all fields to continue"}
       </button>
 
-      <p className="text-xs text-gray-400 text-center mt-4">
+      <p className="text-xs text-gray-400 dark:text-gray-600 text-center mt-4">
         Your responses are anonymous and used for research purposes only.
       </p>
     </div>

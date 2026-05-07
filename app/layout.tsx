@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ProgressBar } from "@/components/progress-bar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v0.1</span>
           </div>
         </nav>
+        <ProgressBar />
         <main className="max-w-5xl mx-auto px-6 py-10">{children}</main>
       </body>
     </html>
