@@ -17,14 +17,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <nav className="bg-white border-b border-gray-200">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 bg-gray-900 rounded flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs font-bold tracking-tight">H</span>
+              <div className="w-9 h-9 bg-gray-900 rounded flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-sm font-bold tracking-tight">H</span>
               </div>
-              <span className="font-semibold text-gray-900 tracking-tight">HUMAID Platform</span>
+              <span className="text-lg font-bold text-gray-900 tracking-tight">HUMAID Platform</span>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v0.1</span>
-              <a href="/admin" className="text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-500 px-3 py-1.5 rounded-md transition-colors hidden sm:inline">Admin</a>
+              <a href="/admin" className="text-xs font-medium text-white bg-gray-900 hover:bg-gray-700 px-3 py-1.5 rounded-md transition-colors hidden sm:inline">Admin</a>
             </div>
           </div>
         </nav>
