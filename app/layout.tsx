@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <div className="flex items-center gap-4">
               <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v0.1</span>
-              <a href="/admin" className="text-xs text-gray-400 hover:text-gray-700 transition-colors hidden sm:inline">Admin</a>
+              <a href="/admin" className="text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-500 px-3 py-1.5 rounded-md transition-colors hidden sm:inline">Admin</a>
             </div>
           </div>
         </nav>
