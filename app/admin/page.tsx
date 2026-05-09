@@ -56,12 +56,23 @@ export default function AdminPage() {
           <h1 className="text-2xl font-semibold text-gray-900 mb-1">Session Dashboard</h1>
           <p className="text-sm text-gray-500">All recorded participant sessions.</p>
         </div>
-        <a
-          href="/api/export"
-          className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
-        >
-          Export CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/export"
+            className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
+          >
+            Export CSV
+          </a>
+          <button
+            onClick={async () => {
+              await fetch("/api/admin/logout", { method: "POST" });
+              window.location.href = "/admin/login";
+            }}
+            className="flex-shrink-0 text-sm font-medium text-gray-400 hover:text-gray-700 px-3 py-2 transition-colors"
+          >
+            Log out
+          </button>
+        </div>
       </div>
 
       {loading ? (
