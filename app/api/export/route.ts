@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { kv } from "@vercel/kv";
 
 function esc(v: unknown): string {
   return `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -8,12 +7,14 @@ function esc(v: unknown): string {
 
 export async function GET() {
   try {
-    const logFile = path.join(process.cwd(), "logs", "sessions.json");
-    if (!fs.existsSync(logFile)) {
+    const raw = await kv.lrange<string>("sessions", 0, -1);
+    if (!raw || raw.length === 0) {
       return new NextResponse("No data yet.", { status: 404 });
     }
 
-    const sessions: Record<string, unknown>[] = JSON.parse(fs.readFileSync(logFile, "utf-8"));
+    const sessions: Record<string, unknown>[] = raw.map((item) =>
+      typeof item === "string" ? JSON.parse(item) : item
+    );
 
     // --- Session-level CSV ---
     const sessionHeader = [

@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { kv } from "@vercel/kv";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const entry = { ...body, loggedAt: new Date().toISOString() };
 
-  console.log("[HUMAID LOG]", JSON.stringify(entry, null, 2));
+  console.log("[HUMAID LOG]", JSON.stringify(entry));
 
   try {
-    const logsDir = path.join(process.cwd(), "logs");
-    const logFile = path.join(logsDir, "sessions.json");
-
-    let sessions: unknown[] = [];
-    if (fs.existsSync(logFile)) {
-      sessions = JSON.parse(fs.readFileSync(logFile, "utf-8"));
-    }
-    sessions.push(entry);
-    fs.writeFileSync(logFile, JSON.stringify(sessions, null, 2));
-  } catch {
-    // File write fails gracefully in production/read-only environments
+    await kv.lpush("sessions", JSON.stringify(entry));
+  } catch (err) {
+    console.error("[HUMAID LOG] KV write failed:", err);
   }
 
   return NextResponse.json({ success: true, sessionId: body.sessionId });

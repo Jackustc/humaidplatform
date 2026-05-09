@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { kv } from "@vercel/kv";
 
 export async function GET() {
   try {
-    const logFile = path.join(process.cwd(), "logs", "sessions.json");
-    if (!fs.existsSync(logFile)) {
-      return NextResponse.json([]);
-    }
-    const sessions = JSON.parse(fs.readFileSync(logFile, "utf-8"));
+    const raw = await kv.lrange<string>("sessions", 0, -1);
+    const sessions = raw.map((item) =>
+      typeof item === "string" ? JSON.parse(item) : item
+    );
     return NextResponse.json(sessions);
-  } catch {
+  } catch (err) {
+    console.error("[sessions route] KV read failed:", err);
     return NextResponse.json([]);
   }
 }
