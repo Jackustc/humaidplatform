@@ -2,7 +2,7 @@
 
 **Human Multi-Agent AI Interaction Dynamics**
 
-This is a research prototype built to support the HUMAID theoretical framework, which studies how a single human user interacts with a collection of AI agents. The platform is designed for academic experimentation and allows participants to complete a literature review task using multiple AI agents in two distinct interaction modes.
+A research platform studying how people interact with multiple AI agents when completing academic tasks. Participants complete a literature review using AI agents in one of two interaction modes. Every interaction is logged and available to researchers through a password-protected admin dashboard.
 
 Live platform: https://humaidplatform.vercel.app
 
@@ -10,83 +10,101 @@ GitHub repository: https://github.com/kanadmotiwale/humaidplatform
 
 ---
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| AI | OpenAI GPT-4o |
+| Database | Upstash Redis (via Vercel KV) |
+| Deployment | Vercel |
+| Auth | Custom cookie-based password gate |
+
+---
+
 ## Application Flow
 
-### Landing Page
+### 1. Consent and Demographics
 
-A participant visits the platform and is presented with a single research task: conduct a literature review on Generative AI in Higher Education. The page shows a brief description of the task, the estimated time required, and two mode options. The participant reads the task and selects either Collaborative Mode or Competitive Mode to begin. A unique session ID is generated at this point and all subsequent interactions are tracked under that ID.
+A participant visits the platform and sees a consent form with a brief description of the study. They fill in demographic fields (age range, education level, AI familiarity, field of study) and check a consent box. A unique session ID is generated at this point in the format `sess_<timestamp>_<random>`. All subsequent events are tracked under that ID using sessionStorage.
 
 ---
 
-### Collaborative Mode
+### 2. Task and Mode Selection
 
-The participant works through a three-step sequential pipeline. Each step must be completed before the next one begins.
+The participant reads the task description — a literature review on Generative AI in Higher Education — and selects either Collaborative Mode or Competitive Mode. Their choice is stored in sessionStorage and they are sent to the instructions page.
+
+---
+
+### 3. Collaborative Mode
+
+The participant works through a sequential three-step pipeline. Each step calls the OpenAI API and the result from one step is passed as input to the next.
 
 **Step 1 — Agent 1: Keyword Specialist**
-
-The participant lands on the collaborative page and Agent 1 begins running immediately. After a short loading period, Agent 1 produces a list of 15 search keywords relevant to the topic of Generative AI in Higher Education. The keywords are displayed as individual tags. The participant reviews them and clicks "Use these keywords" to pass them to the next agent. The timestamp of this action is recorded.
+Calls `POST /api/agents/keywords` with the topic. GPT-4o generates 12 to 15 specific academic search keywords. They are displayed as tags. The participant clicks "Use these keywords" to proceed.
 
 **Step 2 — Agent 2: Paper Search Specialist**
-
-Agent 2 takes the keywords from Agent 1 and searches for relevant academic papers. After loading, it returns 6 papers, each showing the title, authors, year, journal, a relevance rating (High or Medium), and a one-line summary. The participant reviews the papers and clicks "Use these papers" to continue. The timestamp of this action is recorded.
+Calls `POST /api/agents/papers` with the keywords from Step 1. GPT-4o generates 5 to 7 realistic academic paper references with titles, authors, years, journals, relevance ratings, and summaries. The participant reviews the papers and clicks "Use these papers."
 
 **Step 3 — Agent 3: Literature Summarizer**
-
-Agent 3 synthesizes the retrieved papers into a structured three-paragraph literature review. The participant can read the output and edit it directly in a text area if they want to revise or improve it. Once satisfied, they click "Submit final answer" to proceed to the submission page.
-
----
-
-### Competitive Mode
-
-The participant lands on the competitive page and all three agents begin running simultaneously. After a short loading period, all three outputs appear at the same time in a side-by-side layout.
-
-**Agent A — Analytical and Structured**
-Produces a literature review using clear headers, bullet points, and an evidence-based structure.
-
-**Agent B — Narrative and Flowing**
-Produces a literature review written as cohesive prose that synthesizes findings into a continuous argument.
-
-**Agent C — Critical and Concise**
-Produces a shorter, more critical review that directly surfaces tensions and gaps in the literature.
-
-The participant reads all three outputs and clicks "Select this response" on the one they find most useful. The selected text populates an editable text area below the cards. The participant can edit the text before clicking "Submit final answer." The timestamp of the selection and the identity of the selected agent are both recorded.
+Calls `POST /api/agents/summary` with the papers from Step 2. GPT-4o synthesizes a three-paragraph literature review. The participant can edit the text before submitting.
 
 ---
 
-### Submission Page
+### 4. Competitive Mode
 
-After submitting from either mode, the participant lands on the submission page. They see their final answer, along with a summary of their session metadata: the mode used, whether they edited the AI output, and the time elapsed. They are then asked to rate their confidence in the submission on a scale of 1 to 5. Once they select a rating, the "Submit and complete" button becomes active. Clicking it sends all session data to the logging endpoint and shows a confirmation screen with a summary of the recorded session.
+All three agents run simultaneously in parallel. On page load, `POST /api/agents/competitive` fires a single request that calls GPT-4o three times concurrently, each with a different style prompt. The three outputs appear side by side.
+
+- **Agent A — Analytical and Structured**: evidence-based with bullet points and clear headers
+- **Agent B — Narrative and Flowing**: continuous prose that builds an argument
+- **Agent C — Critical and Concise**: short, direct, surfaces tensions and gaps
+
+The participant must scroll through each output before the Select button unlocks. They select one, optionally edit it, and submit.
+
+---
+
+### 5. Submission and Survey
+
+After submitting, the participant rates their confidence in the final answer (1 to 5), then completes a short post-task survey covering trust in the AI output, perceived difficulty, satisfaction, and mental effort (all 1 to 5 scales). Clicking "Submit and complete" sends all session data to `POST /api/log`, which writes it to Upstash Redis.
 
 ---
 
 ## What Gets Logged
 
-Every session records the following data and writes it to a local JSON file at logs/sessions.json. In the next development phase this will move to a Supabase database.
+Every session records the following:
 
-Session ID, mode selected, task topic, start time, end time, final submission text, whether the participant edited the AI output, and confidence rating.
+**Session metadata**
+Session ID, mode, task topic, start time, end time, whether the output was edited, original character count, final character count, characters added, characters removed.
 
-For collaborative sessions: the timestamp at which the participant advanced each step.
+**Collaborative-specific**
+Timestamps for each step transition (when the participant advanced from Agent 1 to 2, and 2 to 3).
 
-For competitive sessions: which agent was selected and at what time the selection was made.
+**Competitive-specific**
+Which agent was selected and the timestamp of selection.
+
+**Survey data**
+Confidence rating, trust, difficulty, satisfaction, and effort scores. Demographics (age range, education, AI familiarity, field of study).
+
+**Provenance analysis**
+A character-level comparison between the participant's final text and the original AI output using a longest-common-substring algorithm. Reports what percentage of the final submission came from the AI versus was typed by the participant.
+
+**Event stream**
+A timestamped log of every interaction during the session: when the participant viewed each agent panel (with dwell time in milliseconds), scroll depth percentages on each agent card, hover durations, copy events, paste events, textarea focus and blur, and debounced edit events with character and word counts.
 
 ---
 
-## Tech Stack
+## Admin Dashboard
 
-The application is built with Next.js 14 using the App Router. The UI is styled with Tailwind CSS. There is no external database in this prototype version. The AI agent outputs are currently hardcoded placeholders that simulate realistic responses. Real AI integration using the Claude API and Semantic Scholar for paper retrieval is planned for the next development phase.
+The admin dashboard is available at `/admin` and is protected by a password. Unauthenticated users are redirected to `/admin/login`. The cookie lasts 7 days.
 
----
+The dashboard shows:
 
-## Running the Project Locally
-
-Make sure you have Node.js installed. Then run the following commands.
-
-```
-npm install
-npm run dev
-```
-
-Open your browser and go to http://localhost:3000.
+- Summary cards: total sessions, collaborative count, competitive count, percentage who edited the AI output
+- Survey averages across all sessions: confidence, trust, difficulty, satisfaction, effort
+- A full sessions table with all recorded fields
+- An Export CSV button that downloads a two-section CSV: session summary rows and a full event stream
 
 ---
 
@@ -94,39 +112,71 @@ Open your browser and go to http://localhost:3000.
 
 ```
 app/
-  page.tsx              Landing page with mode selection
-  collaborative/        Collaborative mode — three step pipeline
-  competitive/          Competitive mode — parallel agent comparison
-  submit/               Final submission and confidence rating
-  api/log/              Logging endpoint
+  page.tsx                    Consent and demographics
+  task/                       Task description and mode selection
+  instructions/               Mode-specific instructions
+  collaborative/              Sequential three-agent pipeline
+  competitive/                Parallel three-agent comparison
+  submit/                     Confidence rating, survey, and final logging
+  admin/
+    page.tsx                  Session dashboard (protected)
+    login/page.tsx            Password login page
+  api/
+    agents/
+      keywords/route.ts       GPT-4o keyword generation
+      papers/route.ts         GPT-4o paper retrieval
+      summary/route.ts        GPT-4o literature review synthesis
+      competitive/route.ts    Three parallel GPT-4o calls
+    log/route.ts              Writes session to Upstash Redis
+    sessions/route.ts         Reads all sessions from Upstash Redis
+    export/route.ts           Generates and downloads CSV
+    admin/
+      login/route.ts          Validates password, sets cookie
+      logout/route.ts         Clears cookie
+components/
+  progress-bar.tsx            Step indicator shown in the navbar
 lib/
-  data.ts               All agent outputs and task configuration
-logs/
-  sessions.json         Interaction logs (created on first submission)
+  data.ts                     Task configuration and topic
+  event-logger.ts             Client-side event accumulator (sessionStorage)
+  provenance.ts               LCS-based text provenance algorithm
+middleware.ts                 Redirects unauthenticated /admin requests to login
 ```
 
 ---
 
-## Roadmap
+## Environment Variables
 
-**Current (Week 1)**
-Fully functional prototype with hardcoded agent outputs, both interaction modes, and a working data logging endpoint. Deployed at humaidplatform.vercel.app.
+The following variables must be set in `.env.local` for local development and in Vercel for production.
 
-**Week 2**
-Integration of real AI agents using the Claude API. Agent 1 and Agent 3 will use Claude with role-specific system prompts. Agent 2 will retrieve real papers from the Semantic Scholar API.
+```
+OPENAI_API_KEY=        Your OpenAI API key (GPT-4o access required)
+ADMIN_PASSWORD=        Password to log in to the admin dashboard
+ADMIN_SECRET=          Random secret string used to sign the admin cookie
+KV_REST_API_URL=       Injected automatically by Vercel when Upstash is connected
+KV_REST_API_TOKEN=     Injected automatically by Vercel when Upstash is connected
+```
 
-**Week 3**
-Database integration with Supabase to persist session logs. UI refinements based on feedback.
+---
 
-**Week 4**
-End-to-end testing, edge case handling, and documentation for research deployment.
+## Running Locally
+
+```bash
+npm install
+npm run dev
+```
+
+Open http://localhost:3000.
+
+For the AI routes to work locally you need a valid `OPENAI_API_KEY` in `.env.local`. For the admin dashboard to persist data locally you need the Upstash KV vars, which you can pull using the Vercel CLI:
+
+```bash
+npx vercel env pull .env.local
+```
 
 ---
 
 ## Research Context
 
-This platform is built to support ongoing research on the HUMAID theoretical framework. The framework addresses a gap in existing human-AI interaction theory, which has primarily focused on one-to-one (dyadic) interactions between a human and a single AI. As multi-agent AI systems become more common, new dynamics emerge around information overload, inconsistent agent outputs, and social influence effects that existing models do not account for.
+This platform supports ongoing research on the HUMAID theoretical framework, which addresses a gap in human-AI interaction theory. Existing models focus on one-to-one (dyadic) interactions between a human and a single AI. As multi-agent systems become more common, new dynamics emerge around information overload, inconsistent agent outputs, delegation behaviour, and social influence effects that existing models do not account for.
 
-The platform is intended for use in controlled user studies where participants are assigned to one of the two interaction modes and their behavior is observed and logged for analysis.
-
-For questions about the research, refer to the working paper on SSRN: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6650059
+Working paper: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6650059
