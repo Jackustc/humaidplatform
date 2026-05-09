@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { COLLABORATIVE, TASK } from "@/lib/data";
+import { TASK } from "@/lib/data";
 import { logEvent, getEvents } from "@/lib/event-logger";
 import { computeProvenance, summariseProvenance } from "@/lib/provenance";
 
-type Step = 1 | 2 | 3;
+type Paper = {
+  title: string;
+  authors: string;
+  year: number;
+  journal: string;
+  relevance: "High" | "Medium" | "Low";
+  summary: string;
+};
 
-const STEPS = [
-  { step: 1 as Step, label: "Keywords", agent: COLLABORATIVE.agent1 },
-  { step: 2 as Step, label: "Papers", agent: COLLABORATIVE.agent2 },
-  { step: 3 as Step, label: "Summary", agent: COLLABORATIVE.agent3 },
-];
+type Step = 1 | 2 | 3;
 
 function wordCount(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -58,28 +61,101 @@ function CopyButton({ getText }: { getText: () => string }) {
   );
 }
 
+const STEP_META = [
+  { step: 1 as Step, label: "Keywords", agentName: "Agent 1", role: "Keyword Specialist", description: "Generates relevant search keywords for your literature review topic." },
+  { step: 2 as Step, label: "Papers", agentName: "Agent 2", role: "Paper Search Specialist", description: "Searches academic databases using the provided keywords." },
+  { step: 3 as Step, label: "Summary", agentName: "Agent 3", role: "Literature Summarizer", description: "Synthesizes the identified papers into a structured literature review." },
+];
+
 export default function CollaborativePage() {
   const router = useRouter();
   const timer = useTimer();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [completedSteps, setCompletedSteps] = useState<Step[]>([]);
-  const [finalText, setFinalText] = useState(COLLABORATIVE.agent3.summary);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const [finalText, setFinalText] = useState("");
+  const [originalSummary, setOriginalSummary] = useState("");
+  const [apiError, setApiError] = useState<string | null>(null);
   const [stepTimestamps, setStepTimestamps] = useState<Record<number, string>>({});
   const submittingRef = useRef(false);
   const viewStartRef = useRef<number | null>(null);
   const editDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const activePanelRef = useRef<HTMLDivElement | null>(null);
 
+  // Step 1: load on mount
   useEffect(() => {
     setStepTimestamps({ 1: new Date().toISOString() });
     logEvent("session_start", { mode: "collaborative" });
-    const t = setTimeout(() => {
-      setIsLoading(false);
-      logEvent("agent_ready", { agentId: 1 });
-    }, 1800);
-    return () => clearTimeout(t);
+    loadStep1();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function loadStep1() {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetch("/api/agents/keywords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: TASK.topic }),
+      });
+      if (!res.ok) throw new Error("keywords API error");
+      const data = await res.json();
+      setKeywords(data.keywords ?? []);
+      logEvent("agent_ready", { agentId: 1, keywordCount: data.keywords?.length });
+    } catch {
+      setApiError("Agent 1 failed to generate keywords. Please refresh and try again.");
+      logEvent("agent_error", { agentId: 1 });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function loadStep2() {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetch("/api/agents/papers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keywords, topic: TASK.topic }),
+      });
+      if (!res.ok) throw new Error("papers API error");
+      const data = await res.json();
+      setPapers(data.papers ?? []);
+      logEvent("agent_ready", { agentId: 2, paperCount: data.papers?.length });
+    } catch {
+      setApiError("Agent 2 failed to retrieve papers. Please try again.");
+      logEvent("agent_error", { agentId: 2 });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function loadStep3() {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetch("/api/agents/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ papers, topic: TASK.topic }),
+      });
+      if (!res.ok) throw new Error("summary API error");
+      const data = await res.json();
+      const summary = data.summary ?? "";
+      setFinalText(summary);
+      setOriginalSummary(summary);
+      logEvent("agent_ready", { agentId: 3, summaryLength: summary.length });
+    } catch {
+      setApiError("Agent 3 failed to generate a summary. Please try again.");
+      logEvent("agent_error", { agentId: 3 });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   // Dwell time tracking via IntersectionObserver
   useEffect(() => {
@@ -140,27 +216,23 @@ export default function CollaborativePage() {
     }, 1500);
   }
 
-  function advanceStep() {
+  async function advanceStep() {
     logEvent("step_advance", { fromStep: currentStep, toStep: currentStep + 1 });
     const next = (currentStep + 1) as Step;
     setCompletedSteps((prev) => [...prev, currentStep]);
     setCurrentStep(next);
-    setIsLoading(true);
     setStepTimestamps((prev) => ({ ...prev, [next]: new Date().toISOString() }));
-    setTimeout(() => {
-      setIsLoading(false);
-      logEvent("agent_ready", { agentId: next });
-    }, 1800);
+
+    if (next === 2) await loadStep2();
+    if (next === 3) await loadStep3();
   }
 
   function handleSubmit() {
     submittingRef.current = true;
-    const original = COLLABORATIVE.agent3.summary;
 
-    // Provenance computation
     const provenanceSpans = computeProvenance(finalText, [
-      { id: "agent_3_summary", text: COLLABORATIVE.agent3.summary },
-      { id: "agent_2_papers", text: COLLABORATIVE.agent2.papers.map((p) => p.summary).join(" ") },
+      { id: "agent_3_summary", text: originalSummary },
+      { id: "agent_2_papers", text: papers.map((p) => p.summary).join(" ") },
     ]);
     const provenanceSummary = summariseProvenance(provenanceSpans);
     logEvent("session_end", { provenanceSummary });
@@ -174,11 +246,11 @@ export default function CollaborativePage() {
       endTime: new Date().toISOString(),
       stepTimestamps,
       finalSubmission: finalText,
-      wasEdited: finalText !== original,
-      originalLength: original.length,
+      wasEdited: finalText !== originalSummary,
+      originalLength: originalSummary.length,
       finalLength: finalText.length,
-      charsAdded: Math.max(0, finalText.length - original.length),
-      charsRemoved: Math.max(0, original.length - finalText.length),
+      charsAdded: Math.max(0, finalText.length - originalSummary.length),
+      charsRemoved: Math.max(0, originalSummary.length - finalText.length),
       provenanceSpans,
       provenanceSummary,
       events,
@@ -206,7 +278,7 @@ export default function CollaborativePage() {
 
       {/* Step indicator */}
       <div className="flex items-center mb-8">
-        {STEPS.map(({ step, label }, i) => {
+        {STEP_META.map(({ step, label }, i) => {
           const isDone = completedSteps.includes(step);
           const isCurrent = currentStep === step;
           return (
@@ -221,7 +293,7 @@ export default function CollaborativePage() {
                 </div>
                 <span className={`text-xs hidden sm:inline ${isCurrent ? "text-gray-900 font-medium" : isDone ? "text-gray-500" : "text-gray-300"}`}>{label}</span>
               </div>
-              {i < STEPS.length - 1 && <div className={`w-8 h-px mx-3 ${isDone ? "bg-gray-400" : "bg-gray-200"}`} />}
+              {i < STEP_META.length - 1 && <div className={`w-8 h-px mx-3 ${isDone ? "bg-gray-400" : "bg-gray-200"}`} />}
             </div>
           );
         })}
@@ -229,7 +301,7 @@ export default function CollaborativePage() {
 
       {/* Completed steps */}
       {completedSteps.map((step) => {
-        const info = STEPS.find((s) => s.step === step)!;
+        const info = STEP_META.find((s) => s.step === step)!;
         return (
           <div key={step} className="border border-gray-100 rounded-lg mb-3 overflow-hidden">
             <div className="px-5 py-3 flex items-center justify-between bg-gray-50">
@@ -237,23 +309,22 @@ export default function CollaborativePage() {
                 <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-gray-600 font-medium">{info.agent.name} — {info.agent.role}</span>
+                <span className="text-sm text-gray-600 font-medium">{info.agentName} — {info.role}</span>
               </div>
               <span className="text-xs text-gray-400">Completed</span>
             </div>
-            <div
-              className="px-5 py-3"
-              onCopy={() => handleAgentCopy(step)}
-            >
+            <div className="px-5 py-3" onCopy={() => handleAgentCopy(step)}>
               {step === 1 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {COLLABORATIVE.agent1.keywords.slice(0, 5).map((kw) => (
+                  {keywords.slice(0, 5).map((kw) => (
                     <span key={kw} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{kw}</span>
                   ))}
-                  <span className="text-xs text-gray-400 py-0.5">+{COLLABORATIVE.agent1.keywords.length - 5} more</span>
+                  {keywords.length > 5 && (
+                    <span className="text-xs text-gray-400 py-0.5">+{keywords.length - 5} more</span>
+                  )}
                 </div>
               )}
-              {step === 2 && <p className="text-xs text-gray-500">{COLLABORATIVE.agent2.papers.length} papers retrieved.</p>}
+              {step === 2 && <p className="text-xs text-gray-500">{papers.length} papers retrieved.</p>}
             </div>
           </div>
         );
@@ -261,27 +332,31 @@ export default function CollaborativePage() {
 
       {/* Active step */}
       {(() => {
-        const info = STEPS.find((s) => s.step === currentStep)!;
+        const info = STEP_META.find((s) => s.step === currentStep)!;
         return (
           <div ref={activePanelRef} className="border border-gray-300 rounded-lg overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900 text-sm">{info.agent.name} — {info.agent.role}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{info.agent.description}</p>
+                <p className="font-medium text-gray-900 text-sm">{info.agentName} — {info.role}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{info.description}</p>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded font-mono ${isLoading ? "text-gray-400" : "text-gray-600 bg-gray-100"}`}>
-                {isLoading ? "Running..." : "Ready"}
+                {isLoading ? "Running…" : "Ready"}
               </span>
             </div>
 
             <div className="p-5" onCopy={() => handleAgentCopy(currentStep)}>
-              {isLoading ? <Skeleton /> : (
+              {isLoading ? (
+                <Skeleton />
+              ) : apiError ? (
+                <div className="text-sm text-red-500 py-2">{apiError}</div>
+              ) : (
                 <>
                   {currentStep === 1 && (
                     <div>
-                      <p className="text-xs text-gray-400 mb-3">{COLLABORATIVE.agent1.keywords.length} keywords generated</p>
+                      <p className="text-xs text-gray-400 mb-3">{keywords.length} keywords generated</p>
                       <div className="flex flex-wrap gap-2">
-                        {COLLABORATIVE.agent1.keywords.map((kw) => (
+                        {keywords.map((kw) => (
                           <span key={kw} className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded border border-gray-200">{kw}</span>
                         ))}
                       </div>
@@ -290,9 +365,9 @@ export default function CollaborativePage() {
 
                   {currentStep === 2 && (
                     <div>
-                      <p className="text-xs text-gray-400 mb-3">{COLLABORATIVE.agent2.papers.length} papers found</p>
+                      <p className="text-xs text-gray-400 mb-3">{papers.length} papers found</p>
                       <div className="space-y-3">
-                        {COLLABORATIVE.agent2.papers.map((paper, i) => (
+                        {papers.map((paper, i) => (
                           <div key={i} className="border border-gray-100 rounded-lg p-4">
                             <div className="flex items-start justify-between gap-3 mb-1">
                               <p className="text-sm font-medium text-gray-800 leading-snug">{paper.title}</p>
@@ -311,7 +386,7 @@ export default function CollaborativePage() {
                   {currentStep === 3 && (
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs text-gray-400">Synthesized from {COLLABORATIVE.agent2.papers.length} papers. You may edit before submitting.</p>
+                        <p className="text-xs text-gray-400">Synthesized from {papers.length} papers. You may edit before submitting.</p>
                         <CopyButton getText={() => finalText} />
                       </div>
                       <textarea
@@ -324,7 +399,7 @@ export default function CollaborativePage() {
                         className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
                       />
                       <p className="text-xs text-gray-400 mt-1.5">
-                        {finalText !== COLLABORATIVE.agent3.summary ? "Modified from original — " : ""}
+                        {finalText !== originalSummary ? "Modified from original — " : ""}
                         {wordCount(finalText)} words
                       </p>
                     </div>
@@ -333,7 +408,7 @@ export default function CollaborativePage() {
               )}
             </div>
 
-            {!isLoading && (
+            {!isLoading && !apiError && (
               <div className="px-5 pb-5 flex justify-center">
                 {currentStep < 3 ? (
                   <button onClick={advanceStep} className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors">
@@ -344,6 +419,21 @@ export default function CollaborativePage() {
                     Submit final answer
                   </button>
                 )}
+              </div>
+            )}
+
+            {apiError && (
+              <div className="px-5 pb-5 flex justify-center">
+                <button
+                  onClick={() => {
+                    if (currentStep === 1) loadStep1();
+                    else if (currentStep === 2) loadStep2();
+                    else loadStep3();
+                  }}
+                  className="border border-gray-300 text-gray-600 hover:border-gray-500 text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             )}
           </div>

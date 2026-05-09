@@ -2,9 +2,17 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { COMPETITIVE, TASK } from "@/lib/data";
+import { TASK } from "@/lib/data";
 import { logEvent, getEvents } from "@/lib/event-logger";
 import { computeProvenance, summariseProvenance } from "@/lib/provenance";
+
+type Agent = {
+  id: number;
+  name: string;
+  style: string;
+  description: string;
+  output: string;
+};
 
 function wordCount(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -54,6 +62,8 @@ export default function CompetitivePage() {
   const router = useRouter();
   const timer = useTimer();
   const [isLoading, setIsLoading] = useState(true);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState("");
   const [selectionTime, setSelectionTime] = useState<string | null>(null);
@@ -65,18 +75,36 @@ export default function CompetitivePage() {
 
   useEffect(() => {
     logEvent("session_start", { mode: "competitive" });
-    const t = setTimeout(() => {
-      setIsLoading(false);
-      logEvent("agents_ready", { agentCount: COMPETITIVE.length });
-    }, 2200);
-    return () => clearTimeout(t);
+    loadAgents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function loadAgents() {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetch("/api/agents/competitive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: TASK.topic }),
+      });
+      if (!res.ok) throw new Error("competitive API error");
+      const data = await res.json();
+      setAgents(data.agents ?? []);
+      logEvent("agents_ready", { agentCount: data.agents?.length });
+    } catch {
+      setApiError("Agents failed to generate outputs. Please refresh and try again.");
+      logEvent("agent_error", { mode: "competitive" });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   // After load, auto-unlock cards too short to need scrolling
   useEffect(() => {
-    if (!isLoading) {
-      const timer = setTimeout(() => {
-        COMPETITIVE.forEach((agent) => {
+    if (!isLoading && agents.length > 0) {
+      const t = setTimeout(() => {
+        agents.forEach((agent) => {
           const el = scrollRefs.current.get(agent.id);
           if (el && el.scrollHeight <= el.clientHeight + 5) {
             setScrolledIds((prev) => new Set([...prev, agent.id]));
@@ -84,9 +112,9 @@ export default function CompetitivePage() {
           }
         });
       }, 100);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(t);
     }
-  }, [isLoading]);
+  }, [isLoading, agents]);
 
   // Beforeunload warning
   useEffect(() => {
@@ -146,18 +174,17 @@ export default function CompetitivePage() {
     setSelectedId(id);
     setEditedText(output);
     setSelectionTime(new Date().toISOString());
-    logEvent("agent_selected", { agentId: id, agentName: COMPETITIVE.find((a) => a.id === id)?.name });
+    logEvent("agent_selected", { agentId: id, agentName: agents.find((a) => a.id === id)?.name });
   }
 
   function handleSubmit() {
     submittingRef.current = true;
-    const selected = COMPETITIVE.find((a) => a.id === selectedId);
+    const selected = agents.find((a) => a.id === selectedId);
     const original = selected?.output ?? "";
 
-    // Provenance: compare final text against ALL agent outputs
     const provenanceSpans = computeProvenance(
       editedText,
-      COMPETITIVE.map((a) => ({ id: `agent_${a.name.replace(/\s+/g, "_")}`, text: a.output }))
+      agents.map((a) => ({ id: `agent_${a.name.replace(/\s+/g, "_")}`, text: a.output }))
     );
     const provenanceSummary = summariseProvenance(provenanceSpans);
     logEvent("session_end", { provenanceSummary });
@@ -186,7 +213,7 @@ export default function CompetitivePage() {
     router.push("/submit");
   }
 
-  const allScrolled = COMPETITIVE.every((a) => scrolledIds.has(a.id));
+  const allScrolled = agents.length > 0 && agents.every((a) => scrolledIds.has(a.id));
 
   return (
     <div>
@@ -205,73 +232,97 @@ export default function CompetitivePage() {
         <p className="text-sm text-gray-500">Three agents independently summarized the same literature. Read each and select the one you find most useful.</p>
       </div>
 
-      {!isLoading && selectedId === null && (
+      {isLoading && (
+        <p className="text-xs text-gray-400 mb-5 border border-gray-100 rounded px-4 py-2.5 bg-gray-50">
+          Agents are generating their summaries — this takes about 15 seconds…
+        </p>
+      )}
+
+      {!isLoading && !apiError && selectedId === null && (
         <p className="text-xs text-gray-400 mb-5 border border-gray-100 rounded px-4 py-2.5 bg-gray-50">
           {allScrolled ? "You have read all three outputs. Select the one you find most useful." : "Scroll to the bottom of each agent's output before selecting."}
         </p>
       )}
 
-      {!isLoading && selectedId !== null && (
+      {!isLoading && !apiError && selectedId !== null && (
         <p className="text-xs text-gray-500 mb-5 border border-gray-200 rounded px-4 py-2.5 bg-gray-50">
-          You selected {COMPETITIVE.find((a) => a.id === selectedId)?.name}. Scroll down to review and edit your submission.
+          You selected {agents.find((a) => a.id === selectedId)?.name}. Scroll down to review and edit your submission.
         </p>
+      )}
+
+      {apiError && (
+        <div className="mb-5 border border-red-100 rounded px-4 py-3 bg-red-50 flex items-center justify-between gap-4">
+          <p className="text-sm text-red-500">{apiError}</p>
+          <button
+            onClick={loadAgents}
+            className="flex-shrink-0 text-xs font-medium border border-red-200 text-red-500 hover:border-red-400 px-3 py-1.5 rounded transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {/* Three agent cards */}
       <div className="grid lg:grid-cols-3 gap-4 mb-8">
-        {COMPETITIVE.map((agent) => {
-          const isSelected = selectedId === agent.id;
-          const hasScrolled = scrolledIds.has(agent.id);
-          return (
-            <div
-              key={agent.id}
-              className={`border rounded-lg overflow-hidden transition-all ${isSelected ? "border-gray-900 shadow-sm" : "border-gray-200 hover:border-gray-300"}`}
-              onMouseEnter={() => handleCardMouseEnter(agent.id)}
-              onMouseLeave={() => handleCardMouseLeave(agent.id)}
-              onCopy={() => handleAgentCopy(agent.id)}
-            >
-              <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">{agent.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{agent.style}</p>
+        {isLoading
+          ? [1, 2, 3].map((i) => (
+              <div key={i} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <div className="h-3 bg-gray-100 rounded w-1/2 animate-pulse mb-1.5" />
+                  <div className="h-2.5 bg-gray-100 rounded w-3/4 animate-pulse" />
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {!isLoading && !hasScrolled && <span className="text-xs text-gray-300 font-medium">scroll ↓</span>}
-                  {isSelected && <span className="text-xs bg-gray-900 text-white px-2 py-0.5 rounded font-medium">Selected</span>}
-                </div>
+                <div className="p-4"><Skeleton /></div>
               </div>
-
-              <div className="p-4">
-                {isLoading ? <Skeleton /> : (
-                  <div
-                    ref={(el) => { scrollRefs.current.set(agent.id, el); }}
-                    onScroll={(e) => handleCardScroll(agent.id, e)}
-                    className="text-xs text-gray-600 leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto"
-                  >
-                    {agent.output}
+            ))
+          : agents.map((agent) => {
+              const isSelected = selectedId === agent.id;
+              const hasScrolled = scrolledIds.has(agent.id);
+              return (
+                <div
+                  key={agent.id}
+                  className={`border rounded-lg overflow-hidden transition-all ${isSelected ? "border-gray-900 shadow-sm" : "border-gray-200 hover:border-gray-300"}`}
+                  onMouseEnter={() => handleCardMouseEnter(agent.id)}
+                  onMouseLeave={() => handleCardMouseLeave(agent.id)}
+                  onCopy={() => handleAgentCopy(agent.id)}
+                >
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{agent.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{agent.style}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {!hasScrolled && <span className="text-xs text-gray-300 font-medium">scroll ↓</span>}
+                      {isSelected && <span className="text-xs bg-gray-900 text-white px-2 py-0.5 rounded font-medium">Selected</span>}
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {!isLoading && (
-                <div className="px-4 pb-4">
-                  <button
-                    onClick={() => hasScrolled && selectAgent(agent.id, agent.output)}
-                    disabled={!hasScrolled}
-                    title={!hasScrolled ? "Scroll through the full output first" : undefined}
-                    className={`w-full text-sm font-medium py-2 rounded-md transition-colors ${
-                      isSelected ? "bg-gray-900 text-white"
-                      : hasScrolled ? "border border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900"
-                      : "border border-gray-100 text-gray-300 cursor-not-allowed"
-                    }`}
-                  >
-                    {isSelected ? "Selected" : hasScrolled ? "Select this response" : "Read to unlock"}
-                  </button>
+                  <div className="p-4">
+                    <div
+                      ref={(el) => { scrollRefs.current.set(agent.id, el); }}
+                      onScroll={(e) => handleCardScroll(agent.id, e)}
+                      className="text-xs text-gray-600 leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto"
+                    >
+                      {agent.output}
+                    </div>
+                  </div>
+
+                  <div className="px-4 pb-4">
+                    <button
+                      onClick={() => hasScrolled && selectAgent(agent.id, agent.output)}
+                      disabled={!hasScrolled}
+                      title={!hasScrolled ? "Scroll through the full output first" : undefined}
+                      className={`w-full text-sm font-medium py-2 rounded-md transition-colors ${
+                        isSelected ? "bg-gray-900 text-white"
+                        : hasScrolled ? "border border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900"
+                        : "border border-gray-100 text-gray-300 cursor-not-allowed"
+                      }`}
+                    >
+                      {isSelected ? "Selected" : hasScrolled ? "Select this response" : "Read to unlock"}
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
       </div>
 
       {/* Edit and submit */}
@@ -279,7 +330,7 @@ export default function CompetitivePage() {
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
             <p className="font-medium text-gray-900 text-sm">Your Submission</p>
-            <p className="text-xs text-gray-400 mt-0.5">Based on {COMPETITIVE.find((a) => a.id === selectedId)?.name}. You may edit before submitting.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Based on {agents.find((a) => a.id === selectedId)?.name}. You may edit before submitting.</p>
           </div>
           <div className="p-5">
             <div className="flex justify-end mb-2">
@@ -295,7 +346,7 @@ export default function CompetitivePage() {
               className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
             <p className="text-xs text-gray-400 mt-1.5">
-              {editedText !== COMPETITIVE.find((a) => a.id === selectedId)?.output ? "Modified from original — " : ""}
+              {editedText !== (agents.find((a) => a.id === selectedId)?.output ?? "") ? "Modified from original — " : ""}
               {wordCount(editedText)} words
             </p>
           </div>
