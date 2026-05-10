@@ -143,7 +143,7 @@ export default function AdminPage() {
                       <td className="px-4 py-2.5 font-mono text-gray-400 whitespace-nowrap">{s.sessionId?.slice(0, 18)}…</td>
                       <td className="px-4 py-2.5 capitalize text-gray-700">{s.mode}</td>
                       <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{s.startTime && s.endTime ? duration(s.startTime, s.endTime) : "—"}</td>
-                      <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap min-w-[120px]">{s.selectedAgentName ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap min-w-[100px]">{s.selectedAgentName ?? "—"}</td>
                       <td className="px-4 py-2.5">
                         <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${s.wasEdited ? "bg-gray-100 text-gray-700" : "text-gray-300"}`}>
                           {s.wasEdited ? "Yes" : "No"}
