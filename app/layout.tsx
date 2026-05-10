@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="text-lg font-bold text-gray-900 tracking-tight">HUMAID Platform</span>
             </a>
             <div className="flex items-center gap-4">
-              <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v0.1</span>
+              <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v1</span>
               <a href="/admin" className="text-xs font-medium text-white bg-gray-900 hover:bg-gray-700 px-3 py-1.5 rounded-md transition-colors hidden sm:inline">Admin</a>
             </div>
           </div>
