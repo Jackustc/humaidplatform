@@ -140,8 +140,8 @@ export default function SubmitPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Submission recorded</h1>
-          <p className="text-sm text-gray-500">Thank you for participating in this study.</p>
+          <h1 className="text-xl font-semibold text-gray-900 mb-1 text-center">Submission recorded</h1>
+          <p className="text-sm text-gray-500 text-center">Thank you for participating in this study.</p>
         </div>
 
         <div className="border border-gray-200 rounded-lg p-5 text-sm space-y-2 mb-8">
@@ -195,9 +195,9 @@ export default function SubmitPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8 text-center">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Review and Submit</h1>
-        <p className="text-sm text-gray-500">Review your answer and complete the short survey before submitting.</p>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-gray-900 mb-1 text-center">Review and Submit</h1>
+        <p className="text-sm text-gray-500 text-center">Review your answer and complete the short survey before submitting.</p>
       </div>
 
       {/* Metadata */}
