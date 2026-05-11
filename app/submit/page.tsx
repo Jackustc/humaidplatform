@@ -134,8 +134,8 @@ export default function SubmitPage() {
 
     return (
       <div className="max-w-3xl mx-auto py-16">
-        <div className="mb-8">
-          <div className="w-10 h-10 border-2 border-gray-900 rounded-full flex items-center justify-center mb-5">
+        <div className="mb-8 text-center">
+          <div className="w-10 h-10 border-2 border-gray-900 rounded-full flex items-center justify-center mb-5 mx-auto">
             <svg className="w-5 h-5 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
@@ -195,7 +195,7 @@ export default function SubmitPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
+      <div className="mb-8 text-center">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Review and Submit</h1>
         <p className="text-sm text-gray-500">Review your answer and complete the short survey before submitting.</p>
       </div>

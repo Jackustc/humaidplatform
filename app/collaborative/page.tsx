@@ -220,7 +220,7 @@ export default function CollaborativePage() {
         <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-8 text-center">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Collaborative Mode</h1>
         <p className="text-sm text-gray-500">The Orchestrator coordinates Agent A, B, and C through a sequential pipeline. You can see every decision it makes.</p>
       </div>
