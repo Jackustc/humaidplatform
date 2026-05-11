@@ -8,7 +8,7 @@ export default function TaskPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!sessionStorage.getItem("humaid_consented")) {
+    if (!sessionStorage.getItem("humaid_participant_id")) {
       router.push("/");
     }
   }, [router]);
@@ -43,16 +43,16 @@ export default function TaskPage() {
           </p>
           <div className="space-y-2 mb-6 text-xs text-gray-500 dark:text-gray-400 flex-1">
             <div className="flex items-start gap-2">
-              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">1.</span>
-              <span>Agent 1 generates search keywords</span>
+              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">A.</span>
+              <span>Agent A generates search keywords</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">2.</span>
-              <span>Agent 2 finds relevant papers</span>
+              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
+              <span>Agent B finds relevant papers</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">3.</span>
-              <span>Agent 3 synthesizes a summary</span>
+              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
+              <span>Agent C synthesizes a summary</span>
             </div>
           </div>
           <button
