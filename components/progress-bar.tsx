@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 const STEPS = [
-  { label: "Consent", match: (p: string) => p === "/" },
+  { label: "Login", match: (p: string) => p === "/" },
   { label: "Task", match: (p: string) => p === "/task" },
   { label: "Instructions", match: (p: string) => p === "/instructions" },
   { label: "Work", match: (p: string) => p === "/collaborative" || p === "/competitive" },

@@ -62,9 +62,9 @@ function CopyButton({ getText }: { getText: () => string }) {
 }
 
 const STEP_META = [
-  { step: 1 as Step, label: "Keywords", agentName: "Agent 1", role: "Keyword Specialist", description: "Generates relevant search keywords for your literature review topic." },
-  { step: 2 as Step, label: "Papers", agentName: "Agent 2", role: "Paper Search Specialist", description: "Searches academic databases using the provided keywords." },
-  { step: 3 as Step, label: "Summary", agentName: "Agent 3", role: "Literature Summarizer", description: "Synthesizes the identified papers into a structured literature review." },
+  { step: 1 as Step, label: "Keywords", agentName: "Agent A", role: "Keyword Specialist", description: "Generates relevant search keywords for your literature review topic." },
+  { step: 2 as Step, label: "Papers", agentName: "Agent B", role: "Paper Search Specialist", description: "Searches academic databases using the provided keywords." },
+  { step: 3 as Step, label: "Summary", agentName: "Agent C", role: "Literature Summarizer", description: "Synthesizes the identified papers into a structured literature review." },
 ];
 
 export default function CollaborativePage() {
@@ -106,7 +106,7 @@ export default function CollaborativePage() {
       setKeywords(data.keywords ?? []);
       logEvent("agent_ready", { agentId: 1, keywordCount: data.keywords?.length });
     } catch {
-      setApiError("Agent 1 failed to generate keywords. Please refresh and try again.");
+      setApiError("Agent A failed to generate keywords. Please refresh and try again.");
       logEvent("agent_error", { agentId: 1 });
     } finally {
       setIsLoading(false);
@@ -127,7 +127,7 @@ export default function CollaborativePage() {
       setPapers(data.papers ?? []);
       logEvent("agent_ready", { agentId: 2, paperCount: data.papers?.length });
     } catch {
-      setApiError("Agent 2 failed to retrieve papers. Please try again.");
+      setApiError("Agent B failed to retrieve papers. Please try again.");
       logEvent("agent_error", { agentId: 2 });
     } finally {
       setIsLoading(false);
@@ -150,7 +150,7 @@ export default function CollaborativePage() {
       setOriginalSummary(summary);
       logEvent("agent_ready", { agentId: 3, summaryLength: summary.length });
     } catch {
-      setApiError("Agent 3 failed to generate a summary. Please try again.");
+      setApiError("Agent C failed to generate a summary. Please try again.");
       logEvent("agent_error", { agentId: 3 });
     } finally {
       setIsLoading(false);
