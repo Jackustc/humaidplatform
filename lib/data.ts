@@ -1,8 +1,8 @@
 export const TASK = {
-  title: "Literature Review: Generative AI in Higher Education",
-  topic: "Generative AI in Higher Education",
+  title: "Industrial Report: Generative AI",
+  topic: "Generative AI in Industry",
   description:
-    "Your task is to conduct a literature review on the role of Generative AI in Higher Education. Using AI agents, you will gather keywords, identify relevant papers, and synthesize findings into a cohesive summary.",
+    "Your task is to write an industrial report about Generative AI. Using AI agents, you will gather keywords, identify relevant sources, and synthesize findings into a cohesive report.",
   estimatedTime: "10–15 minutes",
 };
 
