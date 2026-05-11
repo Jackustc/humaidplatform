@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const keywordList = (keywords as string[]).slice(0, 8).join(", ");
 
     const completion = await client.chat.completions.create({
-      model: "gpt-5.5",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",

@@ -42,7 +42,7 @@ Write approximately 250–300 words. Cover the key themes, findings, and debates
     const [resA, resB, resC] = await Promise.all(
       AGENT_STYLES.map((agent) =>
         client.chat.completions.create({
-          model: "gpt-5.5",
+          model: "gpt-4o",
           messages: [
             { role: "system", content: agent.systemPrompt },
             { role: "user", content: userPrompt },
