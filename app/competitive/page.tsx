@@ -112,7 +112,7 @@ function useScrollDepth(label: string) {
   }, [label]);
 }
 
-function AgentOutputPanel({ agent, onSelect, isSelected }: { agent: AgentOutput; onSelect: () => void; isSelected: boolean }) {
+function AgentOutputPanel({ agent, onSelect, isSelected }: { agent: AgentOutput; onSelect?: () => void; isSelected?: boolean }) {
   const ref = useScrollDepth(agent.name.toLowerCase().replace(/\s+/g, "_"));
   return (
     <div ref={ref} className="px-5 pb-4 space-y-3">
@@ -126,23 +126,6 @@ function AgentOutputPanel({ agent, onSelect, isSelected }: { agent: AgentOutput;
           <p className="text-xs text-gray-600 leading-relaxed">{agent.critique}</p>
         </div>
       )}
-      <button
-        onClick={onSelect}
-        style={{
-          width: "100%",
-          fontSize: 12,
-          fontWeight: 500,
-          padding: "8px 0",
-          borderRadius: 8,
-          border: isSelected ? "none" : "1px solid #e5e7eb",
-          background: isSelected ? "#111827" : "#fff",
-          color: isSelected ? "#fff" : "#6b7280",
-          cursor: "pointer",
-          transition: "all 0.15s",
-        }}
-      >
-        {isSelected ? "✓ Using this response" : "Use this response"}
-      </button>
     </div>
   );
 }
@@ -200,6 +183,7 @@ export default function CompetitivePage() {
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const [expandedAgents, setExpandedAgents] = useState<Set<number>>(new Set());
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     logEvent("session_start", { mode: "competitive" });
@@ -244,6 +228,7 @@ export default function CompetitivePage() {
       setFinalText(data.finalVersion ?? "");
       if (roundNum === 1) setOriginalFinal(data.finalVersion ?? "");
       setSelectedAgentId(null);
+      setEditMode(false);
       setPhase("complete");
       setShowDisagree(false);
       setDisagreeText("");
@@ -413,24 +398,41 @@ export default function CompetitivePage() {
             </div>
             {currentRound.agentOutputs.map((agent) => (
               <div key={agent.id} className="border-b border-gray-100 last:border-0">
-                <button
-                  onClick={() => toggleAgent(agent.id)}
-                  className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
+                <div className="px-5 py-3 flex items-center justify-between">
+                  <button
+                    onClick={() => toggleAgent(agent.id)}
+                    className="flex items-center gap-2 flex-1 text-left hover:opacity-70 transition-opacity"
+                  >
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
                       agent.id === 1 ? "bg-blue-100 text-blue-800" :
                       agent.id === 2 ? "bg-emerald-100 text-emerald-800" :
                       "bg-violet-100 text-violet-800"
                     }`}>{agent.name}</span>
                     <span className="text-xs text-gray-500">{agent.style}</span>
-                  </div>
-                  <span className="text-xs text-gray-400">{expandedAgents.has(agent.id) ? "Hide" : "View output & critique"}</span>
-                </button>
+                    <span className="text-xs text-gray-400 ml-auto mr-4">{expandedAgents.has(agent.id) ? "Hide" : "View output & critique"}</span>
+                  </button>
+                  <button
+                    onClick={() => { handleSelectAgent(agent); setEditMode(false); }}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 500,
+                      padding: "4px 10px",
+                      borderRadius: 6,
+                      border: selectedAgentId === agent.id ? "none" : "1px solid #e5e7eb",
+                      background: selectedAgentId === agent.id ? "#111827" : "#fff",
+                      color: selectedAgentId === agent.id ? "#fff" : "#6b7280",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {selectedAgentId === agent.id ? "✓ Selected" : "Use this"}
+                  </button>
+                </div>
                 {expandedAgents.has(agent.id) && (
                   <AgentOutputPanel
                     agent={agent}
-                    onSelect={() => handleSelectAgent(agent)}
+                    onSelect={() => { handleSelectAgent(agent); setEditMode(false); }}
                     isSelected={selectedAgentId === agent.id}
                   />
                 )}
@@ -448,24 +450,40 @@ export default function CompetitivePage() {
 
           {/* Final output */}
           <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-            <div className="px-5 py-4 border-b border-gray-100">
-              <p className="font-medium text-gray-900 text-sm">Final Report</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {selectedAgentId !== null
-                  ? `Using ${currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name ?? "agent"}'s response. Edit before submitting.`
-                  : "Selected by the Coordinator. You can pick a different agent's response above, or edit this directly."}
-              </p>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 text-sm">Final Report</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {selectedAgentId !== null
+                    ? `Using ${currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name ?? "agent"}'s response.`
+                    : "Selected by the Coordinator. Pick a different agent above if you prefer."}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditMode((v) => !v)}
+                style={{ fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 6, border: "1px solid #e5e7eb", background: "#fff", color: "#6b7280", cursor: "pointer" }}
+              >
+                {editMode ? "Preview" : "Edit"}
+              </button>
             </div>
             <div className="p-5">
-              <textarea
-                value={finalText}
-                onChange={(e) => handleTextareaChange(e.target.value)}
-                rows={13}
-                className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
-              />
+              {editMode ? (
+                <textarea
+                  value={finalText}
+                  onChange={(e) => handleTextareaChange(e.target.value)}
+                  rows={15}
+                  className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors font-mono"
+                />
+              ) : (
+                <div
+                  className="border border-gray-100 rounded-lg p-4 bg-gray-50 min-h-40 cursor-text"
+                  onClick={() => setEditMode(true)}
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(finalText) }}
+                />
+              )}
               <p className="text-xs text-gray-400 mt-1.5">
                 {finalText !== originalFinal ? "Modified from original — " : ""}
-                {wordCount(finalText)} words
+                {wordCount(finalText)} words · {editMode ? "editing" : "click to edit"}
               </p>
             </div>
             <div className="px-5 pb-5 flex justify-center">
