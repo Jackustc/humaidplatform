@@ -50,6 +50,40 @@ const TYPE_PREFIX: Record<LogEntry["type"], string> = {
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
 
+function applyInline(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function renderMarkdown(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let inList = false;
+  for (const line of lines) {
+    if (line.startsWith("### ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h3 style="font-size:12px;font-weight:600;color:#1f2937;margin:10px 0 4px">${applyInline(line.slice(4))}</h3>`);
+    } else if (line.startsWith("## ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h2 style="font-size:13px;font-weight:700;color:#111827;margin:12px 0 4px">${applyInline(line.slice(3))}</h2>`);
+    } else if (line.startsWith("# ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h1 style="font-size:14px;font-weight:700;color:#111827;margin:12px 0 6px">${applyInline(line.slice(2))}</h1>`);
+    } else if (/^[-*] /.test(line)) {
+      if (!inList) { result.push('<ul style="margin:4px 0;padding-left:16px">'); inList = true; }
+      result.push(`<li style="font-size:12px;color:#4b5563;line-height:1.6;margin:2px 0">${applyInline(line.slice(2))}</li>`);
+    } else if (line.trim() === "") {
+      if (inList) { result.push("</ul>"); inList = false; }
+    } else {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<p style="font-size:12px;color:#4b5563;line-height:1.6;margin:0 0 8px">${applyInline(line)}</p>`);
+    }
+  }
+  if (inList) result.push("</ul>");
+  return result.join("");
+}
+
 // Tracks how far the user has scrolled through a panel (25/50/75/100% milestones).
 // Returns a callback ref — pass it directly to a div's `ref` prop.
 function useScrollDepth(label: string) {
@@ -78,18 +112,37 @@ function useScrollDepth(label: string) {
   }, [label]);
 }
 
-function AgentOutputPanel({ agent }: { agent: AgentOutput }) {
+function AgentOutputPanel({ agent, onSelect, isSelected }: { agent: AgentOutput; onSelect: () => void; isSelected: boolean }) {
   const ref = useScrollDepth(agent.name.toLowerCase().replace(/\s+/g, "_"));
   return (
     <div ref={ref} className="px-5 pb-4 space-y-3">
       <div className="bg-gray-50 rounded-lg p-3">
         <p className="text-xs font-medium text-gray-400 mb-1.5">Output</p>
-        <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{agent.output}</p>
+        <div dangerouslySetInnerHTML={{ __html: renderMarkdown(agent.output) }} />
       </div>
-      <div className="bg-amber-50 rounded-lg p-3">
-        <p className="text-xs font-medium text-amber-600 mb-1.5">Critique from this agent on the others</p>
-        <p className="text-xs text-gray-600 leading-relaxed">{agent.critique}</p>
-      </div>
+      {agent.critique && (
+        <div className="bg-amber-50 rounded-lg p-3">
+          <p className="text-xs font-medium text-amber-600 mb-1.5">Critique from this agent on the others</p>
+          <p className="text-xs text-gray-600 leading-relaxed">{agent.critique}</p>
+        </div>
+      )}
+      <button
+        onClick={onSelect}
+        style={{
+          width: "100%",
+          fontSize: 12,
+          fontWeight: 500,
+          padding: "8px 0",
+          borderRadius: 8,
+          border: isSelected ? "none" : "1px solid #e5e7eb",
+          background: isSelected ? "#111827" : "#fff",
+          color: isSelected ? "#fff" : "#6b7280",
+          cursor: "pointer",
+          transition: "all 0.15s",
+        }}
+      >
+        {isSelected ? "✓ Using this response" : "Use this response"}
+      </button>
     </div>
   );
 }
@@ -146,6 +199,7 @@ export default function CompetitivePage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const [expandedAgents, setExpandedAgents] = useState<Set<number>>(new Set());
+  const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
 
   useEffect(() => {
     logEvent("session_start", { mode: "competitive" });
@@ -189,6 +243,7 @@ export default function CompetitivePage() {
       setCurrentRound(round);
       setFinalText(data.finalVersion ?? "");
       if (roundNum === 1) setOriginalFinal(data.finalVersion ?? "");
+      setSelectedAgentId(null);
       setPhase("complete");
       setShowDisagree(false);
       setDisagreeText("");
@@ -224,6 +279,12 @@ export default function CompetitivePage() {
     setExpandedAgents((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
   }
 
+  function handleSelectAgent(agent: AgentOutput) {
+    setSelectedAgentId(agent.id);
+    setFinalText(agent.output);
+    logEvent("agent_selected", { agentId: agent.id, agentName: agent.name, agentStyle: agent.style });
+  }
+
   function handleSubmit() {
     submittingRef.current = true;
     const provenanceSources = currentRound?.agentOutputs.map((a) => ({
@@ -242,6 +303,7 @@ export default function CompetitivePage() {
       endTime: new Date().toISOString(),
       totalRounds: rounds.length,
       coordinatorDecision: currentRound?.coordinatorDecision,
+      selectedAgent: selectedAgentId !== null ? currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name : "coordinator",
       finalSubmission: finalText,
       wasEdited: finalText !== originalFinal,
       originalLength: originalFinal.length,
@@ -365,7 +427,13 @@ export default function CompetitivePage() {
                   </div>
                   <span className="text-xs text-gray-400">{expandedAgents.has(agent.id) ? "Hide" : "View output & critique"}</span>
                 </button>
-                {expandedAgents.has(agent.id) && <AgentOutputPanel agent={agent} />}
+                {expandedAgents.has(agent.id) && (
+                  <AgentOutputPanel
+                    agent={agent}
+                    onSelect={() => handleSelectAgent(agent)}
+                    isSelected={selectedAgentId === agent.id}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -382,7 +450,11 @@ export default function CompetitivePage() {
           <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
             <div className="px-5 py-4 border-b border-gray-100">
               <p className="font-medium text-gray-900 text-sm">Final Report</p>
-              <p className="text-xs text-gray-400 mt-0.5">Selected and synthesised by the Coordinator. Edit before submitting.</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {selectedAgentId !== null
+                  ? `Using ${currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name ?? "agent"}'s response. Edit before submitting.`
+                  : "Selected by the Coordinator. You can pick a different agent's response above, or edit this directly."}
+              </p>
             </div>
             <div className="p-5">
               <textarea
