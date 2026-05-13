@@ -444,7 +444,7 @@ export default function AdminPage() {
                       <Cell fill="#9ca3af" />
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => [`${value} session${value !== 1 ? "s" : ""}`, ""]}
+                      formatter={(value) => [`${value} session${Number(value) !== 1 ? "s" : ""}`, ""]}
                       contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
                     />
                     <Legend
@@ -476,7 +476,7 @@ export default function AdminPage() {
                       <Cell fill="#d1d5db" />
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => [`${value} session${value !== 1 ? "s" : ""}`, ""]}
+                      formatter={(value) => [`${value} session${Number(value) !== 1 ? "s" : ""}`, ""]}
                       contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
                     />
                     <Legend
