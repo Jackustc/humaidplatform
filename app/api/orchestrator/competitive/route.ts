@@ -83,9 +83,9 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
     const outputB = resB.choices[0].message.content ?? "";
     const outputC = resC.choices[0].message.content ?? "";
 
-    logs.push(log("agent_a", "output", `Draft complete (${outputA.split(/\s+/).length} words) — Analytical & Structured approach.`));
-    logs.push(log("agent_b", "output", `Draft complete (${outputB.split(/\s+/).length} words) — Narrative & Flowing approach.`));
-    logs.push(log("agent_c", "output", `Draft complete (${outputC.split(/\s+/).length} words) — Critical & Concise approach.`));
+    logs.push(log("agent_a", "output", `Draft complete (${outputA.split(/\s+/).length} words) — ChatGPT's response.`));
+    logs.push(log("agent_b", "output", `Draft complete (${outputB.split(/\s+/).length} words) — DeepSeek's response.`));
+    logs.push(log("agent_c", "output", `Draft complete (${outputC.split(/\s+/).length} words) — Claude's response.`));
 
     // ── STEP 2: Critique round — each agent critiques the other two (parallel) ──
     logs.push(log("coordinator", "assignment", "Starting critique round — each agent will evaluate the other two outputs."));
@@ -151,9 +151,9 @@ Return JSON: { "decision": string, "rationale": string, "finalVersion": string }
       success: true,
       logs,
       agentOutputs: [
-        { id: 1, name: "Agent A", style: "Analytical & Structured", output: outputA, critique: critiqueA },
-        { id: 2, name: "Agent B", style: "Narrative & Flowing", output: outputB, critique: critiqueB },
-        { id: 3, name: "Agent C", style: "Critical & Concise", output: outputC, critique: critiqueC },
+        { id: 1, name: "Agent A", style: "ChatGPT's Response", output: outputA, critique: critiqueA },
+        { id: 2, name: "Agent B", style: "DeepSeek's Response", output: outputB, critique: critiqueB },
+        { id: 3, name: "Agent C", style: "Claude's Response", output: outputC, critique: critiqueC },
       ],
       finalVersion: decision.finalVersion ?? outputB,
       coordinatorDecision: decision.decision ?? "",

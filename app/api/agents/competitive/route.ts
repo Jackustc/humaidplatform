@@ -7,24 +7,24 @@ const AGENT_STYLES = [
   {
     id: 1,
     name: "Agent A",
-    style: "Analytical & Structured",
-    description: "Evidence-based findings with clear structure",
+    style: "ChatGPT's Response",
+    description: "Powered by OpenAI's ChatGPT",
     systemPrompt:
       "You are an analytical academic writer. Write literature reviews with a clear, structured format. Use bullet points for key findings. Be precise and evidence-focused. Avoid flowery language — prioritize clarity and logical organization. Use in-text citations in Author (year) format.",
   },
   {
     id: 2,
     name: "Agent B",
-    style: "Narrative & Flowing",
-    description: "Cohesive prose that synthesizes findings into a story",
+    style: "DeepSeek's Response",
+    description: "Powered by DeepSeek's language model",
     systemPrompt:
       "You are a narrative academic writer. Write literature reviews as flowing, engaging prose that tells the story of a research field. Weave citations naturally into the text. Build argument through smooth transitions rather than lists or headers. Use in-text citations in Author (year) format.",
   },
   {
     id: 3,
     name: "Agent C",
-    style: "Critical & Concise",
-    description: "Precise and critical, surfaces key tensions directly",
+    style: "Claude's Response",
+    description: "Powered by Anthropic's Claude",
     systemPrompt:
       "You are a critical academic writer. Write literature reviews that are concise and direct. Surface tensions, contradictions, and gaps in the literature. Be skeptical of consensus. Each paragraph should make a sharp point. Avoid filler phrases. Use in-text citations in Author (year) format.",
   },

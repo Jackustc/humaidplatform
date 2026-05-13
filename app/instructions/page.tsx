@@ -70,9 +70,9 @@ export default function InstructionsPage() {
             </p>
             <div className="space-y-3">
               {[
-                { label: "Agent A — Analytical and Structured", desc: "Uses clear headers and evidence-based structure." },
-                { label: "Agent B — Narrative and Flowing", desc: "Writes in cohesive prose that tells a story." },
-                { label: "Agent C — Critical and Concise", desc: "Direct and critical, highlights key tensions." },
+                { label: "Agent A — ChatGPT", desc: "Powered by OpenAI's ChatGPT model." },
+                { label: "Agent B — DeepSeek", desc: "Powered by DeepSeek's language model." },
+                { label: "Agent C — Claude", desc: "Powered by Anthropic's Claude model." },
               ].map((agent, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="w-6 h-6 bg-gray-900 text-white rounded-full text-xs font-medium flex items-center justify-center flex-shrink-0 mt-0.5">{String.fromCharCode(65 + i)}</span>
