@@ -418,7 +418,7 @@ export default function AdminPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      {["Logged At", "Session ID", "Mode", "Duration", "Agent", "Edited", "Orig→Final", "Events", "Agent %", "Conf.", "Trust", "Diff.", "Sat.", "Effort", "Log"].map((h) => (
+                      {["Log", "Logged At", "Session ID", "Mode", "Duration", "Agent", "Edited", "Orig→Final", "Events", "Agent %", "Conf.", "Trust", "Diff.", "Sat.", "Effort"].map((h) => (
                         <th key={h} className="text-left px-4 py-2.5 text-gray-400 font-medium whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -426,6 +426,14 @@ export default function AdminPage() {
                   <tbody>
                     {[...sessions].reverse().map((s) => (
                       <tr key={s.sessionId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-2.5">
+                          <button
+                            onClick={() => setActiveLog(s)}
+                            className="text-xs font-medium text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-400 px-2.5 py-1 rounded transition-colors whitespace-nowrap"
+                          >
+                            View Log
+                          </button>
+                        </td>
                         <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
                           {s.loggedAt ? new Date(s.loggedAt).toLocaleString() : "—"}
                         </td>
@@ -458,14 +466,6 @@ export default function AdminPage() {
                         <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.difficulty ?? "—"}</td>
                         <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.satisfaction ?? "—"}</td>
                         <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.effort ?? "—"}</td>
-                        <td className="px-4 py-2.5">
-                          <button
-                            onClick={() => setActiveLog(s)}
-                            className="text-xs font-medium text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-400 px-2.5 py-1 rounded transition-colors whitespace-nowrap"
-                          >
-                            View Log
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
