@@ -334,7 +334,7 @@ export default function CompetitivePage() {
           />
           {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
           <button onClick={handleStart} className="w-full bg-gray-900 hover:bg-gray-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-            Start Competition
+            Start Task
           </button>
         </div>
       )}
