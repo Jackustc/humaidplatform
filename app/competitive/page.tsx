@@ -250,7 +250,7 @@ export default function CompetitivePage() {
       charsRemoved: Math.max(0, originalFinal.length - finalText.length),
       provenanceSpans,
       provenanceSummary,
-      rounds: rounds.map((r) => ({ roundNumber: r.roundNumber, userMessage: r.userMessage })),
+      rounds: rounds.map((r) => ({ roundNumber: r.roundNumber, userMessage: r.userMessage, logs: r.logs, agentOutputs: r.agentOutputs, coordinatorDecision: r.coordinatorDecision, coordinatorRationale: r.coordinatorRationale })),
       events: getEvents(),
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));

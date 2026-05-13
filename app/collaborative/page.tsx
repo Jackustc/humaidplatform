@@ -233,7 +233,7 @@ export default function CollaborativePage() {
       charsRemoved: Math.max(0, originalSummary.length - finalText.length),
       provenanceSpans,
       provenanceSummary,
-      rounds: rounds.map((r) => ({ roundNumber: r.roundNumber, userMessage: r.userMessage, keywordCount: r.keywords.length, paperCount: r.papers.length })),
+      rounds: rounds.map((r) => ({ roundNumber: r.roundNumber, userMessage: r.userMessage, keywordCount: r.keywords.length, paperCount: r.papers.length, logs: r.logs })),
       events: getEvents(),
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
