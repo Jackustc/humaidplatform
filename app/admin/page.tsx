@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
+  PieChart, Pie, Cell, Legend,
 } from "recharts";
 
 type Survey = { trust: number; difficulty: number; satisfaction: number; effort: number };
@@ -420,7 +421,76 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Charts */}
+            {/* Pie charts */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+
+              {/* Pie 1 — Sessions by Mode */}
+              <div className="border border-gray-200 rounded-lg p-5 bg-white">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Sessions by Mode</p>
+                <p className="text-xs text-gray-400 mb-3">Total {sessions.length} sessions — collaborative vs competitive split</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: `Collaborative (${collaborative.length})`, value: collaborative.length },
+                        { name: `Competitive (${competitive.length})`,     value: competitive.length  },
+                      ]}
+                      cx="50%" cy="50%"
+                      innerRadius={55} outerRadius={85}
+                      paddingAngle={collaborative.length && competitive.length ? 3 : 0}
+                      dataKey="value"
+                    >
+                      <Cell fill="#111827" />
+                      <Cell fill="#9ca3af" />
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => [`${value} session${value !== 1 ? "s" : ""}`, ""]}
+                      contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
+                    />
+                    <Legend
+                      iconType="circle"
+                      iconSize={8}
+                      formatter={(value) => <span style={{ fontSize: 11, color: "#6b7280" }}>{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Pie 2 — AI Output Acceptance Rate */}
+              <div className="border border-gray-200 rounded-lg p-5 bg-white">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">AI Output Acceptance</p>
+                <p className="text-xs text-gray-400 mb-3">How many participants accepted the AI output without editing</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: `Accepted as-is (${sessions.length - edited.length})`, value: sessions.length - edited.length },
+                        { name: `Edited output (${edited.length})`,                    value: edited.length                   },
+                      ]}
+                      cx="50%" cy="50%"
+                      innerRadius={55} outerRadius={85}
+                      paddingAngle={edited.length && edited.length < sessions.length ? 3 : 0}
+                      dataKey="value"
+                    >
+                      <Cell fill="#111827" />
+                      <Cell fill="#d1d5db" />
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => [`${value} session${value !== 1 ? "s" : ""}`, ""]}
+                      contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
+                    />
+                    <Legend
+                      iconType="circle"
+                      iconSize={8}
+                      formatter={(value) => <span style={{ fontSize: 11, color: "#6b7280" }}>{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+            </div>
+
+            {/* Bar charts */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div className="border border-gray-200 rounded-lg p-5 bg-white">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Mode Distribution</p>
