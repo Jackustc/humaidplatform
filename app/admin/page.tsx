@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
+} from "recharts";
 
 type Survey = { trust: number; difficulty: number; satisfaction: number; effort: number };
 type Session = {
@@ -33,20 +36,66 @@ function avg(arr: number[]) {
   return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1);
 }
 
+function avgNum(arr: number[]): number {
+  if (!arr.length) return 0;
+  return parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2));
+}
+
+const tickStyle = { fontSize: 10, fill: "#9ca3af" };
+
 export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/sessions")
-      .then((r) => r.json())
-      .then((data) => { setSessions(data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(async (r) => {
+        if (r.status === 401) { window.location.href = "/admin/login"; return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        setSessions(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch((err) => { console.error("[admin]", err); setLoading(false); });
   }, []);
 
   const collaborative = sessions.filter((s) => s.mode === "collaborative");
   const competitive = sessions.filter((s) => s.mode === "competitive");
   const edited = sessions.filter((s) => s.wasEdited);
+
+  // Chart A — Mode Distribution
+  const modeData = [
+    { mode: "Collaborative", count: collaborative.length },
+    { mode: "Competitive", count: competitive.length },
+  ];
+
+  // Chart B — Confidence Rating Distribution
+  const confidenceData = [1, 2, 3, 4, 5].map((rating) => ({
+    rating: String(rating),
+    count: sessions.filter((s) => s.confidenceRating === rating).length,
+  }));
+
+  // Chart C — Survey Averages
+  const surveyAvgData = [
+    { label: "Trust", value: avgNum(sessions.map((s) => s.postTaskSurvey?.trust).filter(Boolean)) },
+    { label: "Difficulty", value: avgNum(sessions.map((s) => s.postTaskSurvey?.difficulty).filter(Boolean)) },
+    { label: "Satisfaction", value: avgNum(sessions.map((s) => s.postTaskSurvey?.satisfaction).filter(Boolean)) },
+    { label: "Effort", value: avgNum(sessions.map((s) => s.postTaskSurvey?.effort).filter(Boolean)) },
+  ];
+
+  // Chart D — Edit Rate by Mode
+  const editRateData = [
+    {
+      mode: "Collaborative",
+      total: collaborative.length,
+      edited: collaborative.filter((s) => s.wasEdited).length,
+    },
+    {
+      mode: "Competitive",
+      total: competitive.length,
+      edited: competitive.filter((s) => s.wasEdited).length,
+    },
+  ];
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -118,6 +167,76 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+
+            {/* Chart A — Mode Distribution */}
+            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Mode Distribution</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={modeData} barCategoryGap="40%">
+                  <XAxis dataKey="mode" tick={tickStyle} axisLine={false} tickLine={false} />
+                  <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
+                    cursor={{ fill: "#f9fafb" }}
+                  />
+                  <Bar dataKey="count" fill="#111827" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Chart B — Confidence Rating Distribution */}
+            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Confidence Rating Distribution</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={confidenceData} barCategoryGap="30%">
+                  <XAxis dataKey="rating" tick={tickStyle} axisLine={false} tickLine={false} />
+                  <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
+                    cursor={{ fill: "#f9fafb" }}
+                  />
+                  <Bar dataKey="count" fill="#6b7280" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Chart C — Survey Averages Comparison */}
+            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Survey Averages Comparison</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={surveyAvgData} barCategoryGap="40%">
+                  <XAxis dataKey="label" tick={tickStyle} axisLine={false} tickLine={false} />
+                  <YAxis tick={tickStyle} axisLine={false} tickLine={false} domain={[0, 5]} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
+                    cursor={{ fill: "#f9fafb" }}
+                  />
+                  <Bar dataKey="value" fill="#374151" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Chart D — Edit Rate by Mode */}
+            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Edit Rate by Mode</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={editRateData} barCategoryGap="30%">
+                  <XAxis dataKey="mode" tick={tickStyle} axisLine={false} tickLine={false} />
+                  <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
+                    cursor={{ fill: "#f9fafb" }}
+                  />
+                  <Bar dataKey="total" fill="#9ca3af" radius={[3, 3, 0, 0]} name="Total" />
+                  <Bar dataKey="edited" fill="#111827" radius={[3, 3, 0, 0]} name="Edited" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
           </div>
 
           {/* Sessions table */}

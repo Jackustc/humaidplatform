@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ProgressBar } from "@/components/progress-bar";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,12 +25,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </a>
             <div className="flex items-center gap-4">
               <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v1</span>
-              <a href="/admin" className="text-xs font-medium text-white bg-gray-900 hover:bg-gray-700 px-3 py-1.5 rounded-md transition-colors hidden sm:inline">Admin</a>
             </div>
           </div>
         </nav>
         <ProgressBar />
-        <main className="max-w-5xl mx-auto px-6 py-10">{children}</main>
+        <main className="max-w-5xl mx-auto px-6 py-10">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </main>
       </body>
     </html>
   );

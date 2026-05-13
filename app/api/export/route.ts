@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import { cookies } from "next/headers";
 
 function esc(v: unknown): string {
   return `"${String(v ?? "").replace(/"/g, '""')}"`;
 }
 
 export async function GET() {
+  // Auth check
+  const cookieStore = await cookies();
+  const token = cookieStore.get("humaid_admin_token")?.value;
+  if (!token || token !== process.env.ADMIN_SECRET) {
+    return NextResponse.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, { status: 401 });
+  }
+
   try {
     const raw = await kv.lrange<string>("sessions", 0, -1);
     if (!raw || raw.length === 0) {
@@ -83,7 +91,8 @@ export async function GET() {
         "Content-Disposition": `attachment; filename="humaid-export-${Date.now()}.csv"`,
       },
     });
-  } catch (e) {
-    return new NextResponse(`Export error: ${e}`, { status: 500 });
+  } catch (err) {
+    console.error("[humaid/export] failed:", err);
+    return NextResponse.json({ error: "Export failed", code: "EXPORT_FAILED" }, { status: 500 });
   }
 }

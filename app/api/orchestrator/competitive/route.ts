@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { checkEnv } from "@/lib/env";
+checkEnv();
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -16,7 +18,13 @@ function log(actor: LogEntry["actor"], type: LogEntry["type"], content: string):
 }
 
 export async function POST(req: NextRequest) {
-  const { topic, userMessage, previousFinal, round = 1 } = await req.json();
+  let body: { topic?: string; userMessage?: string; previousFinal?: string; round?: number };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body", code: "INVALID_BODY" }, { status: 400 });
+  }
+  const { topic, userMessage, previousFinal, round = 1 } = body;
   const logs: LogEntry[] = [];
   const isReRun = round > 1 && previousFinal;
 
