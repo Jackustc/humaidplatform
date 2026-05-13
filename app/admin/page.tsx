@@ -291,7 +291,7 @@ export default function AdminPage() {
       {/* Log Modal */}
       {activeLog && <LogModal session={activeLog} onClose={() => setActiveLog(null)} />}
 
-      <div className="max-w-5xl mx-auto">
+      <div className="w-full">
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Research Data</p>
@@ -343,68 +343,62 @@ export default function AdminPage() {
               ))}
             </div>
 
-            {/* Sessions table — latest first */}
+            {/* Sessions table — latest first, full width, no horizontal scroll */}
             <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
               <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-widest">All Sessions</p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      {["Log", "Logged At", "Session ID", "Mode", "Duration", "Agent", "Edited", "Orig→Final", "Events", "Agent %", "Conf.", "Trust", "Diff.", "Sat.", "Effort"].map((h) => (
-                        <th key={h} className="text-left px-4 py-2.5 text-gray-400 font-medium whitespace-nowrap">{h}</th>
-                      ))}
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Session ID</th>
+                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium whitespace-nowrap">Logged At</th>
+                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Mode</th>
+                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Log</th>
+                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Duration</th>
+                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Agent</th>
+                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Edited</th>
+                    <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Conf.</th>
+                    <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Trust</th>
+                    <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Diff.</th>
+                    <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Sat.</th>
+                    <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Effort</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sessions.map((s) => (
+                    <tr key={s.sessionId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2.5 font-mono text-gray-400">{s.sessionId?.slice(0, 20)}…</td>
+                      <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">
+                        {s.loggedAt ? new Date(s.loggedAt).toLocaleString() : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 capitalize text-gray-700">{s.mode}</td>
+                      <td className="px-3 py-2.5">
+                        <button
+                          onClick={() => setActiveLog(s)}
+                          className="text-xs font-medium text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-400 px-2 py-1 rounded transition-colors"
+                        >
+                          View Log
+                        </button>
+                      </td>
+                      <td className="px-3 py-2.5 text-gray-700 whitespace-nowrap">
+                        {s.startTime && s.endTime ? duration(s.startTime, s.endTime) : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-gray-700">{s.selectedAgentName ?? "—"}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`px-1.5 py-0.5 rounded font-medium ${s.wasEdited ? "bg-gray-100 text-gray-700" : "text-gray-300"}`}>
+                          {s.wasEdited ? "Yes" : "No"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center text-gray-700">{s.confidenceRating ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.trust ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.difficulty ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.satisfaction ?? "—"}</td>
+                      <td className="px-3 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.effort ?? "—"}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {sessions.map((s) => (
-                      <tr key={s.sessionId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-2.5">
-                          <button
-                            onClick={() => setActiveLog(s)}
-                            className="text-xs font-medium text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-gray-400 px-2.5 py-1 rounded transition-colors whitespace-nowrap"
-                          >
-                            View Log
-                          </button>
-                        </td>
-                        <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                          {s.loggedAt ? new Date(s.loggedAt).toLocaleString() : "—"}
-                        </td>
-                        <td className="px-4 py-2.5 font-mono text-gray-400 whitespace-nowrap">{s.sessionId?.slice(0, 16)}…</td>
-                        <td className="px-4 py-2.5 capitalize text-gray-700">{s.mode}</td>
-                        <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">
-                          {s.startTime && s.endTime ? duration(s.startTime, s.endTime) : "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap min-w-[90px]">{s.selectedAgentName ?? "—"}</td>
-                        <td className="px-4 py-2.5">
-                          <span className={`px-1.5 py-0.5 rounded font-medium ${s.wasEdited ? "bg-gray-100 text-gray-700" : "text-gray-300"}`}>
-                            {s.wasEdited ? "Yes" : "No"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                          {s.originalLength != null ? `${s.originalLength}→${s.finalLength}` : "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-center text-gray-500">{s.events?.length ?? "—"}</td>
-                        <td className="px-4 py-2.5 text-center text-gray-500">
-                          {s.provenanceSummary
-                            ? (() => {
-                                const total = Object.values(s.provenanceSummary).reduce((a, b) => a + b, 0);
-                                const agent = Object.entries(s.provenanceSummary).filter(([k]) => k !== "user_typed").reduce((a, [, v]) => a + v, 0);
-                                return total > 0 ? `${Math.round((agent / total) * 100)}%` : "—";
-                              })()
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-center text-gray-700">{s.confidenceRating ?? "—"}</td>
-                        <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.trust ?? "—"}</td>
-                        <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.difficulty ?? "—"}</td>
-                        <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.satisfaction ?? "—"}</td>
-                        <td className="px-4 py-2.5 text-center text-gray-700">{s.postTaskSurvey?.effort ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Survey averages */}
