@@ -267,9 +267,9 @@ export default function CompetitivePage() {
         <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
       </div>
 
-      <div className="mb-8">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1 text-center">Competitive Mode</h1>
-        <p className="text-sm text-gray-500 text-center">The Coordinator runs Agent A, B, and C in parallel, has them critique each other, then decides the best output. You see the full conversation.</p>
+      <div className="mb-8" style={{ textAlign: "center" }}>
+        <h1 className="text-xl font-semibold text-gray-900 mb-1">Competitive Mode</h1>
+        <p className="text-sm text-gray-500">The Coordinator runs Agent A, B, and C in parallel, has them critique each other, then decides the best output. You see the full conversation.</p>
       </div>
 
       {/* Brief phase */}

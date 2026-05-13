@@ -20,7 +20,7 @@ export default function TaskPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-10 text-center">
+      <div className="mb-10 text-center" style={{ textAlign: "center" }}>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-1 tracking-tight">{TASK.title}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">A research study on Human Multi-Agent AI Interaction Dynamics</p>
       </div>
@@ -91,7 +91,7 @@ export default function TaskPage() {
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 dark:text-gray-600 mt-8 text-center">
+      <p className="text-xs text-gray-400 dark:text-gray-600 mt-8 text-center" style={{ textAlign: "center" }}>
         Interactions are logged anonymously for research purposes.
       </p>
     </div>
