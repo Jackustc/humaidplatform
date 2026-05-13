@@ -33,7 +33,7 @@ type Round = {
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
-  coordinator: { label: "Coordinator", bg: "bg-gray-900",    text: "text-white" },
+  coordinator: { label: "Orchestrator", bg: "bg-gray-900",    text: "text-white" },
   agent_a:     { label: "Agent A",     bg: "bg-blue-100",    text: "text-blue-800" },
   agent_b:     { label: "Agent B",     bg: "bg-emerald-100", text: "text-emerald-800" },
   agent_c:     { label: "Agent C",     bg: "bg-violet-100",  text: "text-violet-800" },
@@ -234,7 +234,7 @@ export default function CompetitivePage() {
       setDisagreeText("");
       logEvent("coordinator_complete", { round: roundNum });
     } catch {
-      setError("The coordinator encountered an error. Please try again.");
+      setError("The orchestrator encountered an error. Please try again.");
       setPhase(roundNum === 1 ? "brief" : "complete");
       logEvent("coordinator_error", { round: roundNum });
     }
@@ -317,14 +317,14 @@ export default function CompetitivePage() {
 
       <div className="mb-8" style={{ textAlign: "center" }}>
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Competitive Mode</h1>
-        <p className="text-sm text-gray-500">The Coordinator runs Agent A, B, and C in parallel, has them critique each other, then decides the best output. You see the full conversation.</p>
+        <p className="text-sm text-gray-500">The Orchestrator runs Agent A, B, and C in parallel, has them critique each other, then decides the best output. You see the full conversation.</p>
       </div>
 
       {/* Brief phase */}
       {phase === "brief" && (
         <div className="border border-gray-200 rounded-lg p-6 bg-white">
-          <p className="text-sm font-medium text-gray-900 mb-1">Brief the Coordinator</p>
-          <p className="text-xs text-gray-400 mb-4">Tell the Coordinator your preferences for the report. Leave blank to let it decide.</p>
+          <p className="text-sm font-medium text-gray-900 mb-1">Brief the Orchestrator</p>
+          <p className="text-xs text-gray-400 mb-4">Tell the Orchestrator your preferences for the report. Leave blank to let it decide.</p>
           <textarea
             value={userBrief}
             onChange={(e) => setUserBrief(e.target.value)}
@@ -345,9 +345,9 @@ export default function CompetitivePage() {
           <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-gray-900 rounded-full animate-pulse" />
-              <p className="text-sm font-medium text-gray-700">Coordinator is running the competition…</p>
+              <p className="text-sm font-medium text-gray-700">Orchestrator is running the competition…</p>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">Agents are generating outputs, critiquing each other, and the Coordinator is deciding the winner. ~45 seconds.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Agents are generating outputs, critiquing each other, and the Orchestrator is deciding the winner. ~45 seconds.</p>
           </div>
           <div className="p-5"><LogSkeleton /></div>
         </div>
@@ -381,7 +381,7 @@ export default function CompetitivePage() {
           <div className="border border-gray-300 rounded-lg overflow-hidden mb-4">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900 text-sm">Round {currentRound.roundNumber} — Coordinator Log</p>
+                <p className="font-medium text-gray-900 text-sm">Round {currentRound.roundNumber} — Orchestrator Log</p>
                 <p className="text-xs text-gray-400 mt-0.5">{currentRound.logs.length} events · 3 agents · critique round complete</p>
               </div>
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">Complete</span>
@@ -443,7 +443,7 @@ export default function CompetitivePage() {
           {/* Coordinator's decision */}
           {currentRound.coordinatorDecision && (
             <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1.5">Coordinator Decision</p>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1.5">Orchestrator Decision</p>
               <p className="text-sm text-gray-700">{currentRound.coordinatorDecision}</p>
             </div>
           )}
@@ -456,7 +456,7 @@ export default function CompetitivePage() {
                 <p className="text-xs text-gray-400 mt-0.5">
                   {selectedAgentId !== null
                     ? `Using ${currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name ?? "agent"}'s response.`
-                    : "Selected by the Coordinator. Pick a different agent above if you prefer."}
+                    : "Selected by the Orchestrator. Pick a different agent above if you prefer."}
                 </p>
               </div>
               <button
@@ -500,11 +500,11 @@ export default function CompetitivePage() {
               className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >
               <svg className={`w-4 h-4 transition-transform ${showDisagree ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              Not satisfied? Ask the Coordinator to run another round
+              Not satisfied? Ask the Orchestrator to run another round
             </button>
             {showDisagree && (
               <div className="mt-4">
-                <p className="text-xs text-gray-400 mb-2">Tell the Coordinator what to improve. All three agents will compete again with your feedback incorporated.</p>
+                <p className="text-xs text-gray-400 mb-2">Tell the Orchestrator what to improve. All three agents will compete again with your feedback incorporated.</p>
                 <textarea
                   value={disagreeText}
                   onChange={(e) => setDisagreeText(e.target.value)}

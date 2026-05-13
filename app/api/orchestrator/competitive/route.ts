@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are the Main Coordinator managing a competitive multi-agent system. Three agents (A, B, C) will independently write a report, then critique each other, and you will decide the final version.
+          content: `You are the Main Orchestrator managing a competitive multi-agent system. Three agents (A, B, C) will independently write a report, then critique each other, and you will decide the final version.
 Return JSON: { "plan": string, "briefForAgents": string }`,
         },
         {
@@ -53,7 +53,7 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
     logs.push(log("coordinator", "assignment", `Briefing all agents — ${plan.briefForAgents ?? "Write an independent industrial report. Each agent will use a distinct style."}`));
 
     // ── STEP 1: All three agents generate in parallel ──
-    const agentPrompt = (style: string) => `You are an AI agent writing an industrial report. Style: ${style}.\nCoordinator brief: ${plan.briefForAgents ?? `Write a professional industrial report on "${topic}".`}\nWrite ~250–300 words. Return ONLY the report text.`;
+    const agentPrompt = (style: string) => `You are an AI agent writing an industrial report. Style: ${style}.\nOrchestrator brief: ${plan.briefForAgents ?? `Write a professional industrial report on "${topic}".`}\nWrite ~250–300 words. Return ONLY the report text.`;
 
     const [resA, resB, resC] = await Promise.all([
       client.chat.completions.create({
@@ -133,7 +133,7 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
       messages: [
         {
           role: "system",
-          content: `You are the Main Coordinator. Having reviewed all three agent outputs and their critiques, decide the final version to deliver to the user. You may select the best output as-is, or synthesise elements from multiple agents.
+          content: `You are the Main Orchestrator. Having reviewed all three agent outputs and their critiques, decide the final version to deliver to the user. You may select the best output as-is, or synthesise elements from multiple agents.
 Return JSON: { "decision": string, "rationale": string, "finalVersion": string }`,
         },
         {
@@ -161,7 +161,7 @@ Return JSON: { "decision": string, "rationale": string, "finalVersion": string }
       round,
     });
   } catch (err) {
-    console.error("[competitive coordinator]", err);
+    console.error("[competitive orchestrator]", err);
     return NextResponse.json({ error: "Coordination failed", logs }, { status: 500 });
   }
 }

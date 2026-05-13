@@ -61,7 +61,7 @@ type Session = {
 // ── Actor badge colours (matches participant-facing pages) ──────────────────
 const ACTOR_STYLE: Record<string, { bg: string; text: string; label: string }> = {
   orchestrator: { bg: "bg-gray-900",    text: "text-white",        label: "Orchestrator" },
-  coordinator:  { bg: "bg-gray-900",    text: "text-white",        label: "Coordinator"  },
+  coordinator:  { bg: "bg-gray-900",    text: "text-white",        label: "Orchestrator"  },
   agent_a:      { bg: "bg-blue-100",    text: "text-blue-800",     label: "Agent A"      },
   agent_b:      { bg: "bg-emerald-100", text: "text-emerald-800",  label: "Agent B"      },
   agent_c:      { bg: "bg-violet-100",  text: "text-violet-800",   label: "Agent C"      },
@@ -198,7 +198,7 @@ function LogModal({ session, onClose }: { session: Session; onClose: () => void 
                 {/* Coordinator decision */}
                 {round.coordinatorDecision && (
                   <div className="mt-3 bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
-                    <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Coordinator Decision</p>
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">Orchestrator Decision</p>
                     <p className="text-xs text-gray-700">{round.coordinatorDecision}</p>
                     {round.coordinatorRationale && (
                       <p className="text-xs text-gray-500 mt-1 italic">{round.coordinatorRationale}</p>
