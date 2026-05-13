@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { TASK } from "@/lib/data";
 import { logEvent, getEvents } from "@/lib/event-logger";
@@ -49,6 +49,49 @@ const TYPE_PREFIX: Record<LogEntry["type"], string> = {
 };
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
+
+// Tracks how far the user has scrolled through a panel (25/50/75/100% milestones).
+// Returns a callback ref — pass it directly to a div's `ref` prop.
+function useScrollDepth(label: string) {
+  const fired = useRef(new Set<number>());
+  const cleanupRef = useRef<(() => void) | null>(null);
+  return useCallback((el: HTMLDivElement | null) => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+    fired.current.clear();
+    if (!el) return;
+    function check() {
+      const rect = el.getBoundingClientRect();
+      if (rect.height === 0) return;
+      const pct = Math.min(100, Math.max(0, ((window.innerHeight - rect.top) / rect.height) * 100));
+      [25, 50, 75, 100].forEach((milestone) => {
+        if (pct >= milestone && !fired.current.has(milestone)) {
+          fired.current.add(milestone);
+          logEvent("scroll_depth", { panel: label, depthPct: milestone });
+        }
+      });
+    }
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+    cleanupRef.current = () => window.removeEventListener("scroll", check);
+  }, [label]);
+}
+
+function AgentOutputPanel({ agent }: { agent: AgentOutput }) {
+  const ref = useScrollDepth(agent.name.toLowerCase().replace(/\s+/g, "_"));
+  return (
+    <div ref={ref} className="px-5 pb-4 space-y-3">
+      <div className="bg-gray-50 rounded-lg p-3">
+        <p className="text-xs font-medium text-gray-400 mb-1.5">Output</p>
+        <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{agent.output}</p>
+      </div>
+      <div className="bg-amber-50 rounded-lg p-3">
+        <p className="text-xs font-medium text-amber-600 mb-1.5">Critique from this agent on the others</p>
+        <p className="text-xs text-gray-600 leading-relaxed">{agent.critique}</p>
+      </div>
+    </div>
+  );
+}
 
 function useTimer() {
   const [s, setS] = useState(0);
@@ -321,18 +364,7 @@ export default function CompetitivePage() {
                   </div>
                   <span className="text-xs text-gray-400">{expandedAgents.has(agent.id) ? "Hide" : "View output & critique"}</span>
                 </button>
-                {expandedAgents.has(agent.id) && (
-                  <div className="px-5 pb-4 space-y-3">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs font-medium text-gray-400 mb-1.5">Output</p>
-                      <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{agent.output}</p>
-                    </div>
-                    <div className="bg-amber-50 rounded-lg p-3">
-                      <p className="text-xs font-medium text-amber-600 mb-1.5">Critique from this agent on the others</p>
-                      <p className="text-xs text-gray-600 leading-relaxed">{agent.critique}</p>
-                    </div>
-                  </div>
-                )}
+                {expandedAgents.has(agent.id) && <AgentOutputPanel agent={agent} />}
               </div>
             ))}
           </div>

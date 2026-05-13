@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { TASK } from "@/lib/data";
 import { logEvent, getEvents } from "@/lib/event-logger";
@@ -48,6 +48,33 @@ const TYPE_PREFIX: Record<LogEntry["type"], string> = {
 };
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
+
+// Tracks how far the user has scrolled through a panel (25/50/75/100% milestones).
+// Returns a callback ref — pass it directly to a div's `ref` prop.
+function useScrollDepth(label: string) {
+  const fired = useRef(new Set<number>());
+  const cleanupRef = useRef<(() => void) | null>(null);
+  return useCallback((el: HTMLDivElement | null) => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+    fired.current.clear();
+    if (!el) return;
+    function check() {
+      const rect = el.getBoundingClientRect();
+      if (rect.height === 0) return;
+      const pct = Math.min(100, Math.max(0, ((window.innerHeight - rect.top) / rect.height) * 100));
+      [25, 50, 75, 100].forEach((milestone) => {
+        if (pct >= milestone && !fired.current.has(milestone)) {
+          fired.current.add(milestone);
+          logEvent("scroll_depth", { panel: label, depthPct: milestone });
+        }
+      });
+    }
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+    cleanupRef.current = () => window.removeEventListener("scroll", check);
+  }, [label]);
+}
 
 function useTimer() {
   const [s, setS] = useState(0);
@@ -100,6 +127,9 @@ export default function CollaborativePage() {
   const [originalSummary, setOriginalSummary] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
+
+  const logPanelRef = useScrollDepth("orchestrator_log");
+  const reportPanelRef = useScrollDepth("final_report");
 
   useEffect(() => {
     logEvent("session_start", { mode: "collaborative" });
@@ -283,7 +313,7 @@ export default function CollaborativePage() {
           ))}
 
           {/* Current round log */}
-          <div className="border border-gray-300 rounded-lg overflow-hidden mb-4">
+          <div ref={logPanelRef} className="border border-gray-300 rounded-lg overflow-hidden mb-4">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 text-sm">Round {currentRound.roundNumber} — Orchestrator Log</p>
@@ -297,7 +327,7 @@ export default function CollaborativePage() {
           </div>
 
           {/* Final output */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+          <div ref={reportPanelRef} className="border border-gray-200 rounded-lg overflow-hidden mb-4">
             <div className="px-5 py-4 border-b border-gray-100">
               <p className="font-medium text-gray-900 text-sm">Your Report</p>
               <p className="text-xs text-gray-400 mt-0.5">Produced by Agent C and reviewed by the Orchestrator. Edit before submitting.</p>
