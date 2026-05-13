@@ -59,8 +59,9 @@ function useScrollDepth(label: string) {
     cleanupRef.current = null;
     fired.current.clear();
     if (!el) return;
+    const element = el;
     function check() {
-      const rect = el.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
       if (rect.height === 0) return;
       const pct = Math.min(100, Math.max(0, ((window.innerHeight - rect.top) / rect.height) * 100));
       [25, 50, 75, 100].forEach((milestone) => {
