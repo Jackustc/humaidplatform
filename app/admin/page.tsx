@@ -131,16 +131,21 @@ function LogModal({ session, onClose }: { session: Session; onClose: () => void 
             session.rounds.map((round) => (
               <div key={round.roundNumber}>
                 {/* Round header */}
-                <div className="flex items-center gap-3 mb-3">
+                <div className="mb-3">
                   <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-full">
                     Round {round.roundNumber}
                   </span>
-                  {round.roundNumber > 1 && round.userMessage && (
-                    <span className="text-xs text-gray-500 italic">
-                      User feedback: &ldquo;{round.userMessage.slice(0, 80)}{round.userMessage.length > 80 ? "…" : ""}&rdquo;
-                    </span>
-                  )}
                 </div>
+
+                {/* User message — shown for every round */}
+                {round.userMessage && (
+                  <div className="mb-3 border border-blue-100 bg-blue-50 rounded-lg px-4 py-3">
+                    <p className="text-xs font-medium text-blue-500 uppercase tracking-widest mb-1">
+                      {round.roundNumber === 1 ? "User's initial brief" : "User feedback"}
+                    </p>
+                    <p className="text-xs text-gray-700 leading-relaxed">{round.userMessage}</p>
+                  </div>
+                )}
 
                 {/* Log entries */}
                 {round.logs && round.logs.length > 0 ? (
