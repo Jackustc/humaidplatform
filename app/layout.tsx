@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "HUMAID Platform",
-  description: "Human Multi-Agent AI Interaction Dynamics — Research Prototype",
+  description: "Human Multi-Agent AI Interaction Dynamics - Research Prototype",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
