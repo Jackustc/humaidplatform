@@ -3,6 +3,40 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+function applyInline(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function renderMarkdown(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let inList = false;
+  for (const line of lines) {
+    if (line.startsWith("### ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h3 style="font-size:13px;font-weight:600;color:#1f2937;margin:10px 0 4px">${applyInline(line.slice(4))}</h3>`);
+    } else if (line.startsWith("## ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h2 style="font-size:14px;font-weight:700;color:#111827;margin:12px 0 4px">${applyInline(line.slice(3))}</h2>`);
+    } else if (line.startsWith("# ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h1 style="font-size:15px;font-weight:700;color:#111827;margin:12px 0 6px">${applyInline(line.slice(2))}</h1>`);
+    } else if (/^[-*] /.test(line)) {
+      if (!inList) { result.push('<ul style="margin:4px 0;padding-left:16px">'); inList = true; }
+      result.push(`<li style="font-size:13px;color:#374151;line-height:1.6;margin:2px 0">${applyInline(line.slice(2))}</li>`);
+    } else if (line.trim() === "") {
+      if (inList) { result.push("</ul>"); inList = false; }
+    } else {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 8px">${applyInline(line)}</p>`);
+    }
+  }
+  if (inList) result.push("</ul>");
+  return result.join("");
+}
+
 type SessionData = {
   sessionId: string;
   mode: "collaborative" | "competitive";
@@ -220,7 +254,7 @@ export default function SubmitPage() {
           <CopyButton text={data.finalSubmission} />
         </div>
         <div className="p-5">
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{data.finalSubmission}</p>
+          <div dangerouslySetInnerHTML={{ __html: renderMarkdown(data.finalSubmission) }} />
         </div>
       </div>
 
