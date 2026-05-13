@@ -513,13 +513,15 @@ export default function CompetitivePage() {
                   className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors mb-3"
                 />
                 {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
-                <button
-                  onClick={handleDisagree}
-                  disabled={!disagreeText.trim()}
-                  className="bg-gray-900 hover:bg-gray-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-md transition-colors"
-                >
-                  Submit feedback — Run Round {rounds.length + 1}
-                </button>
+                <div style={{ textAlign: "center" }}>
+                  <button
+                    onClick={handleDisagree}
+                    disabled={!disagreeText.trim()}
+                    className="bg-gray-900 hover:bg-gray-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-md transition-colors"
+                  >
+                    Submit feedback — Run Round {rounds.length + 1}
+                  </button>
+                </div>
               </div>
             )}
           </div>
