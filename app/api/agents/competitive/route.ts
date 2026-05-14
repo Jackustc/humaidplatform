@@ -3,49 +3,58 @@ import OpenAI from "openai";
 
 export const maxDuration = 60;
 
-function sanitize(text: string): string {
-  return text
-    .replace(/—|–/g, "-")
-    .replace(/'|'/g, "'")
-    .replace(/"|"/g, '"')
-    .replace(/…/g, "...")
-    .replace(/[^\x00-\x7F]/g, "");
+const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+function clean(text: string): string {
+  return text.replace(/[^ -]/gu, (c) => {
+    const map: Record<string, string> = {
+      "—": "-", "–": "-",
+      "'": "'", "'": "'",
+      """: '"', """: '"',
+      "…": "...",
+    };
+    return map[c] ?? "";
+  });
 }
 
-const openaiClient   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const deepseekClient = new OpenAI({ apiKey: process.env.DEEPSEEK_API_KEY, baseURL: "https://api.deepseek.com" });
-const groqClient     = new OpenAI({ apiKey: process.env.GROQ_API_KEY,     baseURL: "https://api.groq.com/openai/v1" });
+type Msg = { role: string; content: string };
+
+async function deepseek(messages: Msg[]): Promise<string> {
+  const payload = JSON.stringify({ model: "deepseek-chat", messages: messages.map(m => ({ ...m, content: clean(m.content) })), temperature: 0.8 });
+  const res = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}` },
+    body: Buffer.from(payload, "utf8"),
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(`DeepSeek error ${res.status}: ${t.slice(0, 200)}`); }
+  const data = await res.json() as { choices: { message: { content: string } }[] };
+  return data.choices[0].message.content ?? "";
+}
+
+async function groq(messages: Msg[]): Promise<string> {
+  const payload = JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages.map(m => ({ ...m, content: clean(m.content) })), temperature: 0.8 });
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${process.env.GROQ_API_KEY}` },
+    body: Buffer.from(payload, "utf8"),
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(`Groq error ${res.status}: ${t.slice(0, 200)}`); }
+  const data = await res.json() as { choices: { message: { content: string } }[] };
+  return data.choices[0].message.content ?? "";
+}
 
 const AGENTS = [
   {
-    id: 1,
-    name: "Agent A",
-    style: "ChatGPT's Response",
-    description: "Powered by OpenAI's ChatGPT",
-    model: "gpt-4o",
-    client: openaiClient,
-    systemPrompt:
-      "You are an analytical academic writer. Write literature reviews with a clear, structured format. Use bullet points for key findings. Be precise and evidence-focused. Avoid flowery language — prioritize clarity and logical organization. Use in-text citations in Author (year) format.",
+    id: 1, name: "Agent A", style: "ChatGPT's Response", description: "Powered by OpenAI's ChatGPT",
+    systemPrompt: "You are an analytical academic writer. Write literature reviews with clear structure, bullet points for key findings, evidence-based reasoning, and in-text citations in Author (year) format.",
   },
   {
-    id: 2,
-    name: "Agent B",
-    style: "DeepSeek's Response",
-    description: "Powered by DeepSeek's language model",
-    model: "deepseek-chat",
-    client: deepseekClient,
-    systemPrompt:
-      "You are a narrative academic writer. Write literature reviews as flowing, engaging prose that tells the story of a research field. Weave citations naturally into the text. Build argument through smooth transitions rather than lists or headers. Use in-text citations in Author (year) format.",
+    id: 2, name: "Agent B", style: "DeepSeek's Response", description: "Powered by DeepSeek's language model",
+    systemPrompt: "You are a narrative academic writer. Write literature reviews as flowing, engaging prose that tells the story of a research field. Use in-text citations in Author (year) format.",
   },
   {
-    id: 3,
-    name: "Agent C",
-    style: "Groq's Response",
-    description: "Powered by Groq (Llama)",
-    model: "llama-3.3-70b-versatile",
-    client: groqClient,
-    systemPrompt:
-      "You are a critical academic writer. Write literature reviews that are concise and direct. Surface tensions, contradictions, and gaps in the literature. Be skeptical of consensus. Each paragraph should make a sharp point. Avoid filler phrases. Use in-text citations in Author (year) format.",
+    id: 3, name: "Agent C", style: "Groq's Response", description: "Powered by Groq (Llama)",
+    systemPrompt: "You are a critical academic writer. Write concise and direct literature reviews. Surface tensions and gaps in the literature. Use in-text citations in Author (year) format.",
   },
 ];
 
@@ -53,35 +62,32 @@ export async function POST(req: NextRequest) {
   try {
     const { topic } = await req.json();
 
-    const userPrompt = `Write a literature review on the topic: "${topic}"
+    const userPrompt = `Write a literature review on: "${topic}". Approximately 250-300 words. Cover key themes, findings, and debates. Use realistic in-text citations (e.g. Smith & Jones, 2023). Return ONLY the review text.`;
 
-Write approximately 250–300 words. Cover the key themes, findings, and debates in this field. Use realistic in-text citations (e.g. Smith & Jones, 2023) — they can be illustrative but should sound plausible. Return ONLY the review text, no headings or JSON.`;
+    const [resA, resB, resC] = await Promise.all([
+      openaiClient.chat.completions.create({
+        model: "gpt-4o", temperature: 0.8,
+        messages: [
+          { role: "system", content: AGENTS[0].systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }).then(r => r.choices[0].message.content ?? ""),
+      deepseek([{ role: "system", content: AGENTS[1].systemPrompt }, { role: "user", content: userPrompt }]),
+      groq([{ role: "system", content: AGENTS[2].systemPrompt }, { role: "user", content: userPrompt }]),
+    ]);
 
-    const [resA, resB, resC] = await Promise.all(
-      AGENTS.map((agent) => {
-        const needsSanitize = agent.id !== 1; // DeepSeek and Groq only
-        return agent.client.chat.completions.create({
-          model: agent.model,
-          messages: [
-            { role: "system", content: agent.systemPrompt },
-            { role: "user", content: needsSanitize ? sanitize(userPrompt) : userPrompt },
-          ],
-          temperature: 0.8,
-        });
-      })
-    );
-
-    const outputs = [resA, resB, resC].map((res, i) => ({
+    const outputs = [resA, resB, resC].map((output, i) => ({
       id: AGENTS[i].id,
       name: AGENTS[i].name,
       style: AGENTS[i].style,
       description: AGENTS[i].description,
-      output: res.choices[0].message.content ?? "",
+      output,
     }));
 
     return NextResponse.json({ agents: outputs });
   } catch (err) {
-    console.error("[competitive route]", err);
-    return NextResponse.json({ error: "Failed to generate competitive outputs" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Failed to generate outputs";
+    console.error("[competitive agents route]", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
