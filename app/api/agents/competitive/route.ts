@@ -6,15 +6,15 @@ export const maxDuration = 60;
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 function clean(text: string): string {
-  return text.replace(/[^ -]/gu, (c) => {
-    const map: Record<string, string> = {
-      "—": "-", "–": "-",
-      "'": "'", "'": "'",
-      """: '"', """: '"',
-      "…": "...",
-    };
-    return map[c] ?? "";
-  });
+  return text
+    .replace(/—/g, "-")
+    .replace(/–/g, "-")
+    .replace(/‘/g, "'")
+    .replace(/’/g, "'")
+    .replace(/“/g, '"')
+    .replace(/”/g, '"')
+    .replace(/…/g, "...")
+    .replace(/[^\x00-\x7F]/g, "");
 }
 
 type Msg = { role: string; content: string };
