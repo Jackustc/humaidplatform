@@ -3,6 +3,15 @@ import OpenAI from "openai";
 
 export const maxDuration = 60;
 
+function sanitize(text: string): string {
+  return text
+    .replace(/—|–/g, "-")
+    .replace(/'|'/g, "'")
+    .replace(/"|"/g, '"')
+    .replace(/…/g, "...")
+    .replace(/[^\x00-\x7F]/g, "");
+}
+
 const openaiClient   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const deepseekClient = new OpenAI({ apiKey: process.env.DEEPSEEK_API_KEY, baseURL: "https://api.deepseek.com" });
 const groqClient     = new OpenAI({ apiKey: process.env.GROQ_API_KEY,     baseURL: "https://api.groq.com/openai/v1" });
@@ -49,16 +58,17 @@ export async function POST(req: NextRequest) {
 Write approximately 250–300 words. Cover the key themes, findings, and debates in this field. Use realistic in-text citations (e.g. Smith & Jones, 2023) — they can be illustrative but should sound plausible. Return ONLY the review text, no headings or JSON.`;
 
     const [resA, resB, resC] = await Promise.all(
-      AGENTS.map((agent) =>
-        agent.client.chat.completions.create({
+      AGENTS.map((agent) => {
+        const needsSanitize = agent.id !== 1; // DeepSeek and Groq only
+        return agent.client.chat.completions.create({
           model: agent.model,
           messages: [
             { role: "system", content: agent.systemPrompt },
-            { role: "user", content: userPrompt },
+            { role: "user", content: needsSanitize ? sanitize(userPrompt) : userPrompt },
           ],
           temperature: 0.8,
-        })
-      )
+        });
+      })
     );
 
     const outputs = [resA, resB, resC].map((res, i) => ({

@@ -17,6 +17,17 @@ export type LogEntry = {
   content: string;
 };
 
+// DeepSeek and Groq reject non-Latin-1 characters in request bodies.
+// Strip em dashes, curly quotes, ellipsis etc. before sending to those APIs.
+function sanitize(text: string): string {
+  return text
+    .replace(/—|–/g, "-")   // em dash, en dash
+    .replace(/‘|’/g, "'")   // curly single quotes
+    .replace(/“|”/g, '"')   // curly double quotes
+    .replace(/…/g, "...")        // ellipsis
+    .replace(/[^\x00-\x7F]/g, "");   // strip any remaining non-ASCII
+}
+
 function log(actor: LogEntry["actor"], type: LogEntry["type"], content: string): LogEntry {
   return { id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), actor, type, content };
 }
@@ -72,14 +83,14 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
         model: "deepseek-chat", temperature: 0.8,
         messages: [
           { role: "system", content: "You are Agent B (DeepSeek). Style: Narrative and Flowing. Write in cohesive prose that tells a story." },
-          { role: "user", content: agentPrompt("Narrative and Flowing — cohesive prose, storytelling, smooth transitions") },
+          { role: "user", content: sanitize(agentPrompt("Narrative and Flowing - cohesive prose, storytelling, smooth transitions")) },
         ],
       }).catch((e) => { throw new Error(`Agent B (DeepSeek) failed: ${e.message}`); }),
       groqClient.chat.completions.create({
         model: "llama-3.3-70b-versatile", temperature: 0.8,
         messages: [
           { role: "system", content: "You are Agent C (Groq Llama). Style: Critical and Concise. Be direct, surface tensions, highlight gaps." },
-          { role: "user", content: agentPrompt("Critical and Concise — direct, surfaces tensions and gaps, no filler") },
+          { role: "user", content: sanitize(agentPrompt("Critical and Concise - direct, surfaces tensions and gaps, no filler")) },
         ],
       }).catch((e) => { throw new Error(`Agent C (Groq) failed: ${e.message}`); }),
     ]);
@@ -110,14 +121,14 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
         model: "deepseek-chat", temperature: 0.7,
         messages: [
           { role: "system", content: "You are Agent B (DeepSeek) critiquing other agents. Be honest, specific, and constructive." },
-          { role: "user", content: critiquePrompt("Agent B", outputB, [{ name: "Agent A", output: outputA }, { name: "Agent C", output: outputC }]) },
+          { role: "user", content: sanitize(critiquePrompt("Agent B", outputB, [{ name: "Agent A", output: outputA }, { name: "Agent C", output: outputC }])) },
         ],
       }),
       groqClient.chat.completions.create({
         model: "llama-3.3-70b-versatile", temperature: 0.7,
         messages: [
           { role: "system", content: "You are Agent C (Groq Llama) critiquing other agents. Be honest, specific, and constructive." },
-          { role: "user", content: critiquePrompt("Agent C", outputC, [{ name: "Agent A", output: outputA }, { name: "Agent B", output: outputB }]) },
+          { role: "user", content: sanitize(critiquePrompt("Agent C", outputC, [{ name: "Agent A", output: outputA }, { name: "Agent B", output: outputB }])) },
         ],
       }),
     ]);
