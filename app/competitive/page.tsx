@@ -211,7 +211,10 @@ export default function CompetitivePage() {
           round: roundNum,
         }),
       });
-      if (!res.ok) throw new Error("API error");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error ?? "API error");
+      }
       const data = await res.json();
 
       const round: Round = {
@@ -233,8 +236,9 @@ export default function CompetitivePage() {
       setShowDisagree(false);
       setDisagreeText("");
       logEvent("coordinator_complete", { round: roundNum });
-    } catch {
-      setError("The orchestrator encountered an error. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(`Error: ${msg}. Please try again.`);
       setPhase(roundNum === 1 ? "brief" : "complete");
       logEvent("coordinator_error", { round: roundNum });
     }

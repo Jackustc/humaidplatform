@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { checkEnv } from "@/lib/env";
 checkEnv();
 
+export const maxDuration = 60; // Vercel max for hobby plan
+
 const openaiClient   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const deepseekClient = new OpenAI({ apiKey: process.env.DEEPSEEK_API_KEY, baseURL: "https://api.deepseek.com" });
 const groqClient     = new OpenAI({ apiKey: process.env.GROQ_API_KEY,     baseURL: "https://api.groq.com/openai/v1" });
@@ -65,21 +67,21 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
           { role: "system", content: "You are Agent A (ChatGPT). Style: Analytical and Structured. Use clear headers, bullet points, and evidence-based reasoning." },
           { role: "user", content: agentPrompt("Analytical and Structured — use clear headers, bullet points, evidence-based reasoning") },
         ],
-      }),
+      }).catch((e) => { throw new Error(`Agent A (ChatGPT) failed: ${e.message}`); }),
       deepseekClient.chat.completions.create({
         model: "deepseek-chat", temperature: 0.8,
         messages: [
           { role: "system", content: "You are Agent B (DeepSeek). Style: Narrative and Flowing. Write in cohesive prose that tells a story." },
           { role: "user", content: agentPrompt("Narrative and Flowing — cohesive prose, storytelling, smooth transitions") },
         ],
-      }),
+      }).catch((e) => { throw new Error(`Agent B (DeepSeek) failed: ${e.message}`); }),
       groqClient.chat.completions.create({
         model: "llama-3.3-70b-versatile", temperature: 0.8,
         messages: [
           { role: "system", content: "You are Agent C (Groq Llama). Style: Critical and Concise. Be direct, surface tensions, highlight gaps." },
           { role: "user", content: agentPrompt("Critical and Concise — direct, surfaces tensions and gaps, no filler") },
         ],
-      }),
+      }).catch((e) => { throw new Error(`Agent C (Groq) failed: ${e.message}`); }),
     ]);
 
     const outputA = resA.choices[0].message.content ?? "";
@@ -164,7 +166,8 @@ Return JSON: { "decision": string, "rationale": string, "finalVersion": string }
       round,
     });
   } catch (err) {
-    console.error("[competitive orchestrator]", err);
-    return NextResponse.json({ error: "Coordination failed", logs }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Coordination failed";
+    console.error("[competitive orchestrator]", message);
+    return NextResponse.json({ error: message, logs }, { status: 500 });
   }
 }
