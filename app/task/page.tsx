@@ -79,7 +79,7 @@ export default function TaskPage() {
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C uses Claude to write the report</span>
+              <span>Agent C uses Groq (Llama) to write the report</span>
             </div>
           </div>
           <button

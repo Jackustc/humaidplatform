@@ -3,7 +3,9 @@ import OpenAI from "openai";
 import { checkEnv } from "@/lib/env";
 checkEnv();
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openaiClient   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const deepseekClient = new OpenAI({ apiKey: process.env.DEEPSEEK_API_KEY, baseURL: "https://api.deepseek.com" });
+const groqClient     = new OpenAI({ apiKey: process.env.GROQ_API_KEY,     baseURL: "https://api.groq.com/openai/v1" });
 
 export type LogEntry = {
   id: string;
@@ -29,8 +31,8 @@ export async function POST(req: NextRequest) {
   const isReRun = round > 1 && previousFinal;
 
   try {
-    // ── STEP 0: Coordinator plans ──
-    const planRes = await client.chat.completions.create({
+    // ── STEP 0: Orchestrator plans (OpenAI) ──
+    const planRes = await openaiClient.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.7,
       response_format: { type: "json_object" },
@@ -52,28 +54,29 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
     logs.push(log("coordinator", "plan", plan.plan ?? "Launching competitive pipeline — three agents will work independently then critique each other."));
     logs.push(log("coordinator", "assignment", `Briefing all agents — ${plan.briefForAgents ?? "Write an independent industrial report. Each agent will use a distinct style."}`));
 
-    // ── STEP 1: All three agents generate in parallel ──
-    const agentPrompt = (style: string) => `You are an AI agent writing an industrial report. Style: ${style}.\nOrchestrator brief: ${plan.briefForAgents ?? `Write a professional industrial report on "${topic}".`}\nWrite ~250–300 words. Return ONLY the report text.`;
+    // ── STEP 1: All three agents generate in parallel (each using their own model) ──
+    const agentPrompt = (style: string) =>
+      `You are an AI agent writing an industrial report. Style: ${style}.\nOrchestrator brief: ${plan.briefForAgents ?? `Write a professional industrial report on "${topic}".`}\nWrite ~250–300 words. Return ONLY the report text.`;
 
     const [resA, resB, resC] = await Promise.all([
-      client.chat.completions.create({
+      openaiClient.chat.completions.create({
         model: "gpt-4o", temperature: 0.8,
         messages: [
-          { role: "system", content: "You are Agent A. Style: Analytical and Structured. Use clear headers, bullet points, and evidence-based reasoning." },
+          { role: "system", content: "You are Agent A (ChatGPT). Style: Analytical and Structured. Use clear headers, bullet points, and evidence-based reasoning." },
           { role: "user", content: agentPrompt("Analytical and Structured — use clear headers, bullet points, evidence-based reasoning") },
         ],
       }),
-      client.chat.completions.create({
-        model: "gpt-4o", temperature: 0.8,
+      deepseekClient.chat.completions.create({
+        model: "deepseek-chat", temperature: 0.8,
         messages: [
-          { role: "system", content: "You are Agent B. Style: Narrative and Flowing. Write in cohesive prose that tells a story." },
+          { role: "system", content: "You are Agent B (DeepSeek). Style: Narrative and Flowing. Write in cohesive prose that tells a story." },
           { role: "user", content: agentPrompt("Narrative and Flowing — cohesive prose, storytelling, smooth transitions") },
         ],
       }),
-      client.chat.completions.create({
-        model: "gpt-4o", temperature: 0.8,
+      groqClient.chat.completions.create({
+        model: "llama-3.3-70b-versatile", temperature: 0.8,
         messages: [
-          { role: "system", content: "You are Agent C. Style: Critical and Concise. Be direct, surface tensions, highlight gaps." },
+          { role: "system", content: "You are Agent C (Groq Llama). Style: Critical and Concise. Be direct, surface tensions, highlight gaps." },
           { role: "user", content: agentPrompt("Critical and Concise — direct, surfaces tensions and gaps, no filler") },
         ],
       }),
@@ -85,33 +88,33 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
 
     logs.push(log("agent_a", "output", `Draft complete (${outputA.split(/\s+/).length} words) — ChatGPT's response.`));
     logs.push(log("agent_b", "output", `Draft complete (${outputB.split(/\s+/).length} words) — DeepSeek's response.`));
-    logs.push(log("agent_c", "output", `Draft complete (${outputC.split(/\s+/).length} words) — Claude's response.`));
+    logs.push(log("agent_c", "output", `Draft complete (${outputC.split(/\s+/).length} words) — Groq's response.`));
 
-    // ── STEP 2: Critique round — each agent critiques the other two (parallel) ──
+    // ── STEP 2: Critique round — each agent critiques using their own model ──
     logs.push(log("coordinator", "assignment", "Starting critique round — each agent will evaluate the other two outputs."));
 
     const critiquePrompt = (myName: string, myOutput: string, others: { name: string; output: string }[]) =>
       `You are ${myName}. Read the other agents' outputs and provide a brief critique (2–3 sentences per agent) covering strengths and weaknesses. Be specific and constructive.\n\n${others.map(o => `${o.name} output:\n${o.output}`).join("\n\n")}`;
 
     const [critA, critB, critC] = await Promise.all([
-      client.chat.completions.create({
+      openaiClient.chat.completions.create({
         model: "gpt-4o", temperature: 0.7,
         messages: [
-          { role: "system", content: "You are Agent A critiquing other agents. Be honest, specific, and constructive." },
+          { role: "system", content: "You are Agent A (ChatGPT) critiquing other agents. Be honest, specific, and constructive." },
           { role: "user", content: critiquePrompt("Agent A", outputA, [{ name: "Agent B", output: outputB }, { name: "Agent C", output: outputC }]) },
         ],
       }),
-      client.chat.completions.create({
-        model: "gpt-4o", temperature: 0.7,
+      deepseekClient.chat.completions.create({
+        model: "deepseek-chat", temperature: 0.7,
         messages: [
-          { role: "system", content: "You are Agent B critiquing other agents. Be honest, specific, and constructive." },
+          { role: "system", content: "You are Agent B (DeepSeek) critiquing other agents. Be honest, specific, and constructive." },
           { role: "user", content: critiquePrompt("Agent B", outputB, [{ name: "Agent A", output: outputA }, { name: "Agent C", output: outputC }]) },
         ],
       }),
-      client.chat.completions.create({
-        model: "gpt-4o", temperature: 0.7,
+      groqClient.chat.completions.create({
+        model: "llama-3.3-70b-versatile", temperature: 0.7,
         messages: [
-          { role: "system", content: "You are Agent C critiquing other agents. Be honest, specific, and constructive." },
+          { role: "system", content: "You are Agent C (Groq Llama) critiquing other agents. Be honest, specific, and constructive." },
           { role: "user", content: critiquePrompt("Agent C", outputC, [{ name: "Agent A", output: outputA }, { name: "Agent B", output: outputB }]) },
         ],
       }),
@@ -125,8 +128,8 @@ Return JSON: { "plan": string, "briefForAgents": string }`,
     logs.push(log("agent_b", "critique", `Agent B's critique of A & C: ${critiqueB}`));
     logs.push(log("agent_c", "critique", `Agent C's critique of A & B: ${critiqueC}`));
 
-    // ── STEP 3: Coordinator decides final version ──
-    const decisionRes = await client.chat.completions.create({
+    // ── STEP 3: Orchestrator decides final version (OpenAI) ──
+    const decisionRes = await openaiClient.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.6,
       response_format: { type: "json_object" },
@@ -138,7 +141,7 @@ Return JSON: { "decision": string, "rationale": string, "finalVersion": string }
         },
         {
           role: "user",
-          content: `Agent outputs:\n\nAgent A:\n${outputA}\n\nAgent B:\n${outputB}\n\nAgent C:\n${outputC}\n\nCritiques:\nAgent A on B&C: ${critiqueA}\nAgent B on A&C: ${critiqueB}\nAgent C on A&B: ${critiqueC}\n\nUser preferences: ${userMessage || "None specified."}\n\nDecide and produce the final version. Return JSON.`,
+          content: `Agent outputs:\n\nAgent A (ChatGPT):\n${outputA}\n\nAgent B (DeepSeek):\n${outputB}\n\nAgent C (Groq):\n${outputC}\n\nCritiques:\nAgent A on B&C: ${critiqueA}\nAgent B on A&C: ${critiqueB}\nAgent C on A&B: ${critiqueC}\n\nUser preferences: ${userMessage || "None specified."}\n\nDecide and produce the final version. Return JSON.`,
         },
       ],
     });
@@ -151,11 +154,11 @@ Return JSON: { "decision": string, "rationale": string, "finalVersion": string }
       success: true,
       logs,
       agentOutputs: [
-        { id: 1, name: "Agent A", style: "ChatGPT's Response", output: outputA, critique: critiqueA },
+        { id: 1, name: "Agent A", style: "ChatGPT's Response",  output: outputA, critique: critiqueA },
         { id: 2, name: "Agent B", style: "DeepSeek's Response", output: outputB, critique: critiqueB },
-        { id: 3, name: "Agent C", style: "Claude's Response", output: outputC, critique: critiqueC },
+        { id: 3, name: "Agent C", style: "Groq's Response",     output: outputC, critique: critiqueC },
       ],
-      finalVersion: decision.finalVersion ?? outputB,
+      finalVersion: decision.finalVersion ?? outputA,
       coordinatorDecision: decision.decision ?? "",
       coordinatorRationale: decision.rationale ?? "",
       round,
