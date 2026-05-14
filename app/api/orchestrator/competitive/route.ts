@@ -35,10 +35,11 @@ function clean(text: string): string {
 type Msg = { role: string; content: string };
 
 async function deepseek(messages: Msg[], temperature = 0.8): Promise<string> {
+  const deepseekKey = (process.env.DEEPSEEK_API_KEY ?? "").replace(/[^\x00-\x7F]/g, "");
   const payload = JSON.stringify({ model: "deepseek-chat", messages: messages.map(m => ({ ...m, content: clean(m.content) })), temperature });
   const res = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}` },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${deepseekKey}` },
     body: Buffer.from(payload, "utf8"),
   });
   if (!res.ok) { const t = await res.text(); throw new Error(`DeepSeek error ${res.status}: ${t.slice(0, 200)}`); }
@@ -47,10 +48,11 @@ async function deepseek(messages: Msg[], temperature = 0.8): Promise<string> {
 }
 
 async function groq(messages: Msg[], temperature = 0.8): Promise<string> {
+  const groqKey = (process.env.GROQ_API_KEY ?? "").replace(/[^\x00-\x7F]/g, "");
   const payload = JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages.map(m => ({ ...m, content: clean(m.content) })), temperature });
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${process.env.GROQ_API_KEY}` },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${groqKey}` },
     body: Buffer.from(payload, "utf8"),
   });
   if (!res.ok) { const t = await res.text(); throw new Error(`Groq error ${res.status}: ${t.slice(0, 200)}`); }
