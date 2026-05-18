@@ -51,11 +51,11 @@ const AGENTS = [
     systemPrompt: "You are an analytical academic writer. Write literature reviews with clear structure, bullet points for key findings, evidence-based reasoning, and in-text citations in Author (year) format.",
   },
   {
-    id: 2, name: "Agent B", style: "DeepSeek's Response", description: "Powered by DeepSeek's language model",
+    id: 2, name: "Agent B", style: "Groq's Response", description: "Powered by Groq (Llama)",
     systemPrompt: "You are a narrative academic writer. Write literature reviews as flowing, engaging prose that tells the story of a research field. Use in-text citations in Author (year) format.",
   },
   {
-    id: 3, name: "Agent C", style: "Groq's Response", description: "Powered by Groq (Llama)",
+    id: 3, name: "Agent C", style: "DeepSeek's Response", description: "Powered by DeepSeek's language model",
     systemPrompt: "You are a critical academic writer. Write concise and direct literature reviews. Surface tensions and gaps in the literature. Use in-text citations in Author (year) format.",
   },
 ];
@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
           { role: "user", content: userPrompt },
         ],
       }).then(r => r.choices[0].message.content ?? ""),
-      deepseek([{ role: "system", content: AGENTS[1].systemPrompt }, { role: "user", content: userPrompt }]),
-      groq([{ role: "system", content: AGENTS[2].systemPrompt }, { role: "user", content: userPrompt }]),
+      groq([{ role: "system", content: AGENTS[1].systemPrompt }, { role: "user", content: userPrompt }]),
+      deepseek([{ role: "system", content: AGENTS[2].systemPrompt }, { role: "user", content: userPrompt }]),
     ]);
 
     const outputs = [resA, resB, resC].map((output, i) => ({

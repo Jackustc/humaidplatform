@@ -97,21 +97,21 @@ export async function POST(req: NextRequest) {
 
     // STEP 1: All three agents generate in parallel
     const promptA = `You are Agent A (ChatGPT). Style: Analytical and Structured.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
-    const promptB = `You are Agent B (DeepSeek). Style: Narrative and Flowing.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
-    const promptC = `You are Agent C (Groq Llama). Style: Critical and Concise.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
+    const promptB = `You are Agent B (Groq Llama). Style: Narrative and Flowing.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
+    const promptC = `You are Agent C (DeepSeek). Style: Critical and Concise.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
 
     const [outputA, outputB, outputC] = await Promise.all([
       openaiClient.chat.completions.create({
         model: "gpt-4o", temperature: 0.8,
         messages: [{ role: "user", content: promptA }],
       }).then(r => r.choices[0].message.content ?? "").catch(e => { throw new Error(`Agent A (ChatGPT) failed: ${e.message}`); }),
-      deepseek([{ role: "user", content: promptB }], 0.8).catch(e => { throw new Error(`Agent B (DeepSeek) failed: ${e.message}`); }),
-      groq([{ role: "user", content: promptC }], 0.8).catch(e => { throw new Error(`Agent C (Groq) failed: ${e.message}`); }),
+      groq([{ role: "user", content: promptB }], 0.8).catch(e => { throw new Error(`Agent B (Groq) failed: ${e.message}`); }),
+      deepseek([{ role: "user", content: promptC }], 0.8).catch(e => { throw new Error(`Agent C (DeepSeek) failed: ${e.message}`); }),
     ]);
 
     logs.push(log("agent_a", "output", `Draft complete (${outputA.split(/\s+/).length} words) - ChatGPT's response.`));
-    logs.push(log("agent_b", "output", `Draft complete (${outputB.split(/\s+/).length} words) - DeepSeek's response.`));
-    logs.push(log("agent_c", "output", `Draft complete (${outputC.split(/\s+/).length} words) - Groq's response.`));
+    logs.push(log("agent_b", "output", `Draft complete (${outputB.split(/\s+/).length} words) - Groq's response.`));
+    logs.push(log("agent_c", "output", `Draft complete (${outputC.split(/\s+/).length} words) - DeepSeek's response.`));
 
     // STEP 2: Critique round
     logs.push(log("coordinator", "assignment", "Starting critique round - each agent will evaluate the other two outputs."));
@@ -125,8 +125,8 @@ export async function POST(req: NextRequest) {
         model: "gpt-4o", temperature: 0.7,
         messages: [{ role: "user", content: critiqueA_prompt }],
       }).then(r => r.choices[0].message.content ?? ""),
-      deepseek([{ role: "user", content: critiqueB_prompt }], 0.7),
-      groq([{ role: "user", content: critiqueC_prompt }], 0.7),
+      groq([{ role: "user", content: critiqueB_prompt }], 0.7),
+      deepseek([{ role: "user", content: critiqueC_prompt }], 0.7),
     ]);
 
     logs.push(log("agent_a", "critique", `Agent A's critique: ${critiqueA}`));
@@ -158,9 +158,9 @@ export async function POST(req: NextRequest) {
       success: true,
       logs,
       agentOutputs: [
-        { id: 1, name: "Agent A", style: "ChatGPT's Response",  output: outputA, critique: critiqueA },
-        { id: 2, name: "Agent B", style: "DeepSeek's Response", output: outputB, critique: critiqueB },
-        { id: 3, name: "Agent C", style: "Groq's Response",     output: outputC, critique: critiqueC },
+        { id: 1, name: "Agent A", style: "ChatGPT's Response", output: outputA, critique: critiqueA },
+        { id: 2, name: "Agent B", style: "Groq's Response",    output: outputB, critique: critiqueB },
+        { id: 3, name: "Agent C", style: "DeepSeek's Response", output: outputC, critique: critiqueC },
       ],
       finalVersion: decision.finalVersion ?? outputA,
       coordinatorDecision: decision.decision ?? "",

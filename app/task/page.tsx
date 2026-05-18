@@ -75,11 +75,11 @@ export default function TaskPage() {
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
-              <span>Agent B uses DeepSeek to write the report</span>
+              <span>Agent B uses Groq (Llama) to write the report</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C uses Groq (Llama) to write the report</span>
+              <span>Agent C uses DeepSeek to write the report</span>
             </div>
           </div>
           <button
