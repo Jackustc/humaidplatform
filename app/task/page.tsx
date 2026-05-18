@@ -44,15 +44,15 @@ export default function TaskPage() {
           <div className="space-y-2 mb-6 text-xs text-gray-500 dark:text-gray-400 flex-1">
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">A.</span>
-              <span>Agent A generates search keywords</span>
+              <span>Agent A gathers the data</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
-              <span>Agent B finds relevant papers</span>
+              <span>Agent B does the data analysis and statistics</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C synthesizes a summary</span>
+              <span>Agent C does the summary writing</span>
             </div>
           </div>
           <button
