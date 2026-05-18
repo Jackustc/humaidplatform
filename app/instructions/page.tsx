@@ -55,9 +55,9 @@ export default function InstructionsPage() {
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">What to Keep in Mind</p>
             <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">—</span>Read each agent output carefully before moving to the next step.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">—</span>You may edit the final summary produced by Agent C before submitting.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">—</span>There are no right or wrong answers. Your judgment matters.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Read each agent output carefully before moving to the next step.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>You may edit the final summary produced by Agent C before submitting.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>There are no right or wrong answers. Your judgment matters.</li>
             </ul>
           </div>
         </div>
@@ -87,10 +87,10 @@ export default function InstructionsPage() {
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">What to Keep in Mind</p>
             <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">—</span>Read all three outputs before making your selection.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">—</span>Select the response you find most useful for the task.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">—</span>You may edit the selected response before submitting.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">—</span>There are no right or wrong answers. Your judgment matters.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Read all three outputs before making your selection.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Select the response you find most useful for the task.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>You may edit the selected response before submitting.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>There are no right or wrong answers. Your judgment matters.</li>
             </ul>
           </div>
         </div>
