@@ -47,15 +47,15 @@ async function groq(messages: Msg[]): Promise<string> {
 
 const AGENTS = [
   {
-    id: 1, name: "Agent A", style: "ChatGPT's Response", description: "Powered by OpenAI's ChatGPT",
+    id: 1, name: "Agent A", style: "Agent A's Response", description: "AI Agent A",
     systemPrompt: "You are an analytical academic writer. Write literature reviews with clear structure, bullet points for key findings, evidence-based reasoning, and in-text citations in Author (year) format.",
   },
   {
-    id: 2, name: "Agent B", style: "Groq's Response", description: "Powered by Groq (Llama)",
+    id: 2, name: "Agent B", style: "Agent B's Response", description: "AI Agent B",
     systemPrompt: "You are a narrative academic writer. Write literature reviews as flowing, engaging prose that tells the story of a research field. Use in-text citations in Author (year) format.",
   },
   {
-    id: 3, name: "Agent C", style: "DeepSeek's Response", description: "Powered by DeepSeek's language model",
+    id: 3, name: "Agent C", style: "Agent C's Response", description: "AI Agent C",
     systemPrompt: "You are a critical academic writer. Write concise and direct literature reviews. Surface tensions and gaps in the literature. Use in-text citations in Author (year) format.",
   },
 ];

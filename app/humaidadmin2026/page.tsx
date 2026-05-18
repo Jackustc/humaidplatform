@@ -252,7 +252,7 @@ export default function AdminPage() {
   useEffect(() => {
     fetch("/api/sessions")
       .then(async (r) => {
-        if (r.status === 401) { window.location.href = "/admin/login"; return; }
+        if (r.status === 401) { window.location.href = "/humaidadmin2026/login"; return; }
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
         setSessions(Array.isArray(data) ? data : []);
@@ -309,7 +309,7 @@ export default function AdminPage() {
             <button
               onClick={async () => {
                 await fetch("/api/admin/logout", { method: "POST" });
-                window.location.href = "/admin/login";
+                window.location.href = "/humaidadmin2026/login";
               }}
               className="flex-shrink-0 text-sm font-medium text-gray-400 hover:text-gray-700 px-3 py-2 transition-colors"
             >

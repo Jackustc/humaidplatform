@@ -66,13 +66,13 @@ export default function InstructionsPage() {
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">How It Works</p>
             <p className="text-sm text-gray-700 leading-relaxed mb-4">
-              Three AI agents will independently produce a literature review summary on the same topic at the same time. Each agent has a different writing style.
+              Three AI agents will independently produce an industry report on the same topic at the same time. Each agent has a different writing style.
             </p>
             <div className="space-y-3">
               {[
-                { label: "Agent A — ChatGPT", desc: "Powered by OpenAI's ChatGPT model." },
-                { label: "Agent B — Groq (Llama)", desc: "Powered by Groq's Llama model." },
-                { label: "Agent C — DeepSeek", desc: "Powered by DeepSeek's language model." },
+                { label: "Agent A", desc: "Uses a large language model with an analytical writing style." },
+                { label: "Agent B", desc: "Uses a large language model with a narrative writing style." },
+                { label: "Agent C", desc: "Uses a large language model with a critical writing style." },
               ].map((agent, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="w-6 h-6 bg-gray-900 text-white rounded-full text-xs font-medium flex items-center justify-center flex-shrink-0 mt-0.5">{String.fromCharCode(65 + i)}</span>

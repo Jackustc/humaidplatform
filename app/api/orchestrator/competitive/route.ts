@@ -158,9 +158,9 @@ export async function POST(req: NextRequest) {
       success: true,
       logs,
       agentOutputs: [
-        { id: 1, name: "Agent A", style: "ChatGPT's Response", output: outputA, critique: critiqueA },
-        { id: 2, name: "Agent B", style: "Groq's Response",    output: outputB, critique: critiqueB },
-        { id: 3, name: "Agent C", style: "DeepSeek's Response", output: outputC, critique: critiqueC },
+        { id: 1, name: "Agent A", style: "Agent A's Response", output: outputA, critique: critiqueA },
+        { id: 2, name: "Agent B", style: "Agent B's Response", output: outputB, critique: critiqueB },
+        { id: 3, name: "Agent C", style: "Agent C's Response", output: outputC, critique: critiqueC },
       ],
       finalVersion: decision.finalVersion ?? outputA,
       coordinatorDecision: decision.decision ?? "",

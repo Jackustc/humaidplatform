@@ -42,7 +42,7 @@ export default function LoginPage() {
               onChange={(e) => setParticipantId(e.target.value)}
               onKeyDown={handleKeyDown}
               autoFocus
-              placeholder="e.g. P001"
+              placeholder="e.g. 686A9312ED364DD58027EE60BDA4XXXX"
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition-colors"
             />
           </div>

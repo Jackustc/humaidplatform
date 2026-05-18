@@ -27,7 +27,7 @@ export async function GET() {
     // --- Session-level CSV ---
     const sessionHeader = [
       "session_id", "logged_at", "mode", "start_time", "end_time",
-      "duration_sec", "was_edited", "original_length", "final_length",
+      "duration_sec", "rounds", "was_edited", "original_length", "final_length",
       "chars_added", "chars_removed", "selected_agent",
       "confidence_rating", "trust", "difficulty", "satisfaction", "effort",
       "age_range", "education", "ai_familiarity", "field_of_study",
@@ -45,9 +45,10 @@ export async function GET() {
       const endMs = s.endTime ? new Date(s.endTime as string).getTime() : 0;
       const durSec = startMs && endMs ? Math.round((endMs - startMs) / 1000) : "";
 
+      const rounds = Array.isArray(s.rounds) ? s.rounds.length : 1;
       return [
         s.sessionId, s.loggedAt, s.mode, s.startTime, s.endTime,
-        durSec, s.wasEdited, s.originalLength, s.finalLength,
+        durSec, rounds, s.wasEdited, s.originalLength, s.finalLength,
         s.charsAdded, s.charsRemoved, s.selectedAgentName,
         s.confidenceRating, survey.trust, survey.difficulty, survey.satisfaction, survey.effort,
         demo.ageRange, demo.education, demo.aiFamiliarity, demo.fieldOfStudy,
@@ -76,11 +77,12 @@ export async function GET() {
     }
 
     const csv = [
-      "# SESSION SUMMARY",
+      "SESSION SUMMARY",
       sessionHeader,
       ...sessionRows,
       "",
-      "# EVENT STREAM",
+      "",
+      "EVENT STREAM",
       eventHeader,
       ...eventRows,
     ].join("\n");

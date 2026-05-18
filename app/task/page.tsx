@@ -71,15 +71,15 @@ export default function TaskPage() {
           <div className="space-y-2 mb-6 text-xs text-gray-500 dark:text-gray-400 flex-1">
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">A.</span>
-              <span>Agent A uses ChatGPT to write the report</span>
+              <span>Agent A writes the report independently</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
-              <span>Agent B uses Groq (Llama) to write the report</span>
+              <span>Agent B writes the report independently</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C uses DeepSeek to write the report</span>
+              <span>Agent C writes the report independently</span>
             </div>
           </div>
           <button
