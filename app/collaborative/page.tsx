@@ -363,7 +363,7 @@ export default function CollaborativePage() {
               <div className="w-2 h-2 bg-gray-900 rounded-full animate-pulse" />
               <p className="text-sm font-medium text-gray-700">Orchestrator is coordinating the pipeline…</p>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">This takes about 30 seconds. Each agent is being briefed and reviewed.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Each agent is being briefed and reviewed.</p>
           </div>
           <div className="p-5"><LogSkeleton /></div>
         </div>

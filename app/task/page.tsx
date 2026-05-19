@@ -28,7 +28,6 @@ export default function TaskPage() {
       <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-8 bg-gray-50 dark:bg-gray-900">
         <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Your Task</p>
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{TASK.description}</p>
-        <p className="text-xs text-gray-400 dark:text-gray-600 mt-3">Estimated time: {TASK.estimatedTime}</p>
       </div>
 
       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">

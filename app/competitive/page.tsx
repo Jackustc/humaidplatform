@@ -437,7 +437,7 @@ export default function CompetitivePage() {
               <div className="w-2 h-2 bg-gray-900 rounded-full animate-pulse" />
               <p className="text-sm font-medium text-gray-700">Orchestrator is running the competition…</p>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">Agents are generating outputs, critiquing each other, and the Orchestrator is deciding the winner. ~45 seconds.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Agents are generating outputs, critiquing each other, and the Orchestrator is deciding the winner.</p>
           </div>
           <div className="p-5"><LogSkeleton /></div>
         </div>
