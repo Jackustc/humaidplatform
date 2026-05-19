@@ -56,9 +56,6 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <p className="text-xs text-gray-400 text-center mt-4">
-          Your participant ID was provided by the researcher.
-        </p>
       </div>
     </div>
   );
