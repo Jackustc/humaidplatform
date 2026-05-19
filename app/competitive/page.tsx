@@ -123,7 +123,7 @@ function AgentOutputPanel({ agent, onSelect, isSelected }: { agent: AgentOutput;
       {agent.critique && (
         <div className="bg-amber-50 rounded-lg p-3">
           <p className="text-xs font-medium text-amber-600 mb-1.5">Critique from this agent on the others</p>
-          <p className="text-xs text-gray-600 leading-relaxed">{agent.critique}</p>
+          <div dangerouslySetInnerHTML={{ __html: renderMarkdown(agent.critique) }} />
         </div>
       )}
     </div>

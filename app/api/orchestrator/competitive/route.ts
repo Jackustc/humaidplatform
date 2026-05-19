@@ -80,26 +80,41 @@ export async function POST(req: NextRequest) {
     // ── STEP 2: Critique round (parallel, with retry) ─────────────────────────
     logs.push(log("coordinator", "assignment", "Starting critique round — each agent evaluates the other two outputs."));
 
+    const critiqueSystem = `You are a professional peer reviewer. Write a concise, objective critique.
+Use plain prose only — no markdown, no bold, no headers, no bullet points.
+Format: One short paragraph on the first report, then one short paragraph on the second. Keep each paragraph to 2 sentences maximum.`;
+
     const [critiqueA, critiqueB, critiqueC] = await Promise.all([
       withRetry(() =>
         openaiClient.chat.completions
           .create({
-            model: "gpt-4o", temperature: 0.7,
-            messages: [{ role: "user", content: `You are Agent A. In 1-2 sentences each, critique:\nAgent B: ${outputB}\nAgent C: ${outputC}` }],
+            model: "gpt-4o", temperature: 0.6,
+            messages: [
+              { role: "system", content: critiqueSystem },
+              { role: "user", content: `Review these two reports and write a brief professional critique of each.\n\nReport B:\n${outputB}\n\nReport C:\n${outputC}` },
+            ],
           })
           .then((r) => r.choices[0].message.content ?? "")
       ),
       withRetry(() =>
-        callGroq([{ role: "user", content: `You are Agent B. In 1-2 sentences each, critique:\nAgent A: ${outputA}\nAgent C: ${outputC}` }] as Msg[], 0.7)
+        callGroq([
+          { role: "system", content: critiqueSystem },
+          { role: "user", content: `Review these two reports and write a brief professional critique of each.\n\nReport A:\n${outputA}\n\nReport C:\n${outputC}` },
+        ] as Msg[], 0.6)
       ),
       withRetry(() =>
-        callDeepSeek([{ role: "user", content: `You are Agent C. In 1-2 sentences each, critique:\nAgent A: ${outputA}\nAgent B: ${outputB}` }] as Msg[], 0.7)
+        callDeepSeek([
+          { role: "system", content: critiqueSystem },
+          { role: "user", content: `Review these two reports and write a brief professional critique of each.\n\nReport A:\n${outputA}\n\nReport B:\n${outputB}` },
+        ] as Msg[], 0.6)
       ),
     ]);
 
-    logs.push(log("agent_a", "critique", critiqueA));
-    logs.push(log("agent_b", "critique", critiqueB));
-    logs.push(log("agent_c", "critique", critiqueC));
+    // Truncate critique for the log (full text is in agentOutputs)
+    const truncate = (s: string, n = 120) => s.replace(/\*\*/g, "").slice(0, n) + (s.length > n ? "…" : "");
+    logs.push(log("agent_a", "critique", truncate(critiqueA)));
+    logs.push(log("agent_b", "critique", truncate(critiqueB)));
+    logs.push(log("agent_c", "critique", truncate(critiqueC)));
 
     // ── STEP 3: Orchestrator decides final version ─────────────────────────────
     const decisionRes = await withRetry(() =>
