@@ -3,7 +3,13 @@ import OpenAI from "openai";
 import { checkEnv } from "@/lib/env";
 checkEnv();
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const maxDuration = 60;
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  timeout: 25000,
+  maxRetries: 1,
+});
 
 export type LogEntry = {
   id: string;
@@ -146,7 +152,8 @@ Return JSON: { "plan": string, "agentABrief": string }`,
 
     return NextResponse.json({ success: true, logs, keywords, papers, summary, orchestratorMessage: finalMessage, round });
   } catch (err) {
-    console.error("[collaborative orchestrator]", err);
-    return NextResponse.json({ error: "Orchestration failed", logs }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Orchestration failed";
+    console.error("[collaborative orchestrator]", message);
+    return NextResponse.json({ error: message, logs }, { status: 500 });
   }
 }

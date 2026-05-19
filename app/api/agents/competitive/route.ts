@@ -1,54 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { callDeepSeek, callGroq, withRetry, Msg } from "@/lib/api-helpers";
 
 export const maxDuration = 60;
 
-const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-function clean(text: string): string {
-  return text
-    .replace(/—/g, "-")
-    .replace(/–/g, "-")
-    .replace(/‘/g, "'")
-    .replace(/’/g, "'")
-    .replace(/“/g, '"')
-    .replace(/”/g, '"')
-    .replace(/…/g, "...")
-    .replace(/[^\x00-\x7F]/g, "");
-}
-
-type Msg = { role: string; content: string };
-
-async function deepseek(messages: Msg[]): Promise<string> {
-  const deepseekKey = (process.env.DEEPSEEK_API_KEY ?? "").replace(/[^\x00-\x7F]/g, "");
-  const payload = JSON.stringify({ model: "deepseek-chat", messages: messages.map(m => ({ ...m, content: clean(m.content) })), temperature: 0.8 });
-  const res = await fetch("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${deepseekKey}` },
-    body: Buffer.from(payload, "utf8"),
-  });
-  if (!res.ok) { const t = await res.text(); throw new Error(`DeepSeek error ${res.status}: ${t.slice(0, 200)}`); }
-  const data = await res.json() as { choices: { message: { content: string } }[] };
-  return data.choices[0].message.content ?? "";
-}
-
-async function groq(messages: Msg[]): Promise<string> {
-  const groqKey = (process.env.GROQ_API_KEY ?? "").replace(/[^\x00-\x7F]/g, "");
-  const payload = JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages.map(m => ({ ...m, content: clean(m.content) })), temperature: 0.8 });
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": `Bearer ${groqKey}` },
-    body: Buffer.from(payload, "utf8"),
-  });
-  if (!res.ok) { const t = await res.text(); throw new Error(`Groq error ${res.status}: ${t.slice(0, 200)}`); }
-  const data = await res.json() as { choices: { message: { content: string } }[] };
-  return data.choices[0].message.content ?? "";
-}
+const openaiClient = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  timeout: 25000,
+  maxRetries: 1,
+});
 
 const AGENTS = [
   {
     id: 1, name: "Agent A", style: "Agent A's Response", description: "AI Agent A",
-    systemPrompt: "You are an analytical academic writer. Write literature reviews with clear structure, bullet points for key findings, evidence-based reasoning, and in-text citations in Author (year) format.",
+    systemPrompt: "You are an analytical academic writer. Write literature reviews with clear structure, evidence-based reasoning, and in-text citations in Author (year) format.",
   },
   {
     id: 2, name: "Agent B", style: "Agent B's Response", description: "AI Agent B",
@@ -63,19 +28,34 @@ const AGENTS = [
 export async function POST(req: NextRequest) {
   try {
     const { topic } = await req.json();
-
-    const userPrompt = `Write a literature review on: "${topic}". Approximately 250-300 words. Cover key themes, findings, and debates. Use realistic in-text citations (e.g. Smith & Jones, 2023). Return ONLY the review text.`;
+    const userPrompt = `Write a report on: "${topic}". Approximately 200-250 words. Cover key themes, findings, and debates. Return ONLY the report text.`;
 
     const [resA, resB, resC] = await Promise.all([
-      openaiClient.chat.completions.create({
-        model: "gpt-4o", temperature: 0.8,
-        messages: [
-          { role: "system", content: AGENTS[0].systemPrompt },
+      withRetry(() =>
+        openaiClient.chat.completions
+          .create({
+            model: "gpt-4o", temperature: 0.8,
+            messages: [
+              { role: "system", content: AGENTS[0].systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+          })
+          .then((r) => r.choices[0].message.content ?? "")
+      ).catch((e) => { throw new Error(`Agent A failed: ${e.message}`); }),
+
+      withRetry(() =>
+        callGroq([
+          { role: "system", content: AGENTS[1].systemPrompt },
           { role: "user", content: userPrompt },
-        ],
-      }).then(r => r.choices[0].message.content ?? ""),
-      groq([{ role: "system", content: AGENTS[1].systemPrompt }, { role: "user", content: userPrompt }]),
-      deepseek([{ role: "system", content: AGENTS[2].systemPrompt }, { role: "user", content: userPrompt }]),
+        ] as Msg[], 0.8)
+      ).catch((e) => { throw new Error(`Agent B failed: ${e.message}`); }),
+
+      withRetry(() =>
+        callDeepSeek([
+          { role: "system", content: AGENTS[2].systemPrompt },
+          { role: "user", content: userPrompt },
+        ] as Msg[], 0.8)
+      ).catch((e) => { throw new Error(`Agent C failed: ${e.message}`); }),
     ]);
 
     const outputs = [resA, resB, resC].map((output, i) => ({
