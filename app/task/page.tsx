@@ -79,6 +79,10 @@ export default function TaskPage() {
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
+              <span>Agent C independently generates its own report</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">→</span>
               <span>You compare all three and select the one you find most useful</span>
             </div>
           </div>
