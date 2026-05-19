@@ -84,9 +84,9 @@ export default function InstructionsPage() {
             </p>
             <div className="space-y-4">
               {[
-                { label: "Agent A — Analytical Style", desc: "Approaches the task with a structured, data-driven lens. Focuses on logical argument, evidence hierarchies, and quantitative reasoning." },
-                { label: "Agent B — Narrative Style", desc: "Approaches the task with a storytelling lens. Focuses on context, flow, and making complex information accessible and engaging for a general audience." },
-                { label: "Agent C — Critical Style", desc: "Approaches the task with a questioning lens. Focuses on assumptions, trade-offs, counter-arguments, and what the other perspectives may have missed." },
+                { label: "Agent A", desc: "Independently works on the task and produces its own report." },
+                { label: "Agent B", desc: "Independently works on the same task and produces its own report." },
+                { label: "Agent C", desc: "Independently works on the same task and produces its own report." },
               ].map((agent, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="w-6 h-6 bg-gray-900 text-white rounded-full text-xs font-medium flex items-center justify-center flex-shrink-0 mt-0.5">{String.fromCharCode(65 + i)}</span>
