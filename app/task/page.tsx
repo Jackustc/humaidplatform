@@ -39,20 +39,20 @@ export default function TaskPage() {
         <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:border-gray-400 dark:hover:border-gray-600 transition-colors flex flex-col bg-white dark:bg-gray-900">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Collaborative Mode</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-relaxed min-h-[4.5rem]">
-            Work through a sequential pipeline where each agent builds on the previous output.
+            Three specialist agents work in sequence, each building on the previous agent's output. An Orchestrator coordinates the pipeline and you can review every step.
           </p>
           <div className="space-y-2 mb-6 text-xs text-gray-500 dark:text-gray-400 flex-1">
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">A.</span>
-              <span>Agent A gathers the data</span>
+              <span>Agent A collects relevant data and sources</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
-              <span>Agent B does the data analysis and statistics</span>
+              <span>Agent B performs analysis and statistics on that data</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C does the summary writing</span>
+              <span>Agent C writes the final summary, which you review and edit</span>
             </div>
           </div>
           <button
@@ -66,20 +66,20 @@ export default function TaskPage() {
         <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:border-gray-400 dark:hover:border-gray-600 transition-colors flex flex-col bg-white dark:bg-gray-900">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Competitive Mode</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-relaxed min-h-[4.5rem]">
-            Three agents work independently on the same task. Compare and select the best output.
+            Three agents independently produce reports on the same task, each with a different writing style. They then critique each other before you choose and edit the best output.
           </p>
           <div className="space-y-2 mb-6 text-xs text-gray-500 dark:text-gray-400 flex-1">
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">A.</span>
-              <span>Agent A writes the report independently</span>
+              <span>Agent A produces a report with an analytical writing style</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
-              <span>Agent B writes the report independently</span>
+              <span>Agent B produces a report with a narrative writing style</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C writes the report independently</span>
+              <span>Agent C produces a report with a critical writing style</span>
             </div>
           </div>
           <button

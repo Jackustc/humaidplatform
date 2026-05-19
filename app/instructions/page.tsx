@@ -36,28 +36,42 @@ export default function InstructionsPage() {
         <div className="space-y-4 mb-8">
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">How It Works</p>
-            <div className="space-y-3">
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+              In Collaborative Mode, three specialist agents work in sequence. Each agent hands its output to the next, building progressively toward a final report. An Orchestrator coordinates the entire pipeline and reviews each stage before passing it on.
+            </p>
+            <div className="space-y-4">
               {[
-                { label: "Agent A generates keywords", desc: "The first agent produces a set of search keywords for your literature review topic. Review them and proceed." },
-                { label: "Agent B retrieves papers", desc: "The second agent uses those keywords to find relevant academic papers. Review the list and proceed." },
-                { label: "Agent C synthesizes the summary", desc: "The third agent produces a literature review summary. You can edit it before submitting as your final answer." },
+                {
+                  label: "Agent A — Data Collection",
+                  desc: "Agent A receives your task and gathers the relevant data, sources, and evidence needed to address it. You can review what it has collected before the process continues. If you want changes, you can provide feedback to the Orchestrator to revise this stage.",
+                },
+                {
+                  label: "Agent B — Analysis & Statistics",
+                  desc: "Agent B receives Agent A's collected data and performs the analytical work: identifying patterns, computing statistics, and drawing out the key findings. Again, you can review this output and request revisions before moving on.",
+                },
+                {
+                  label: "Agent C — Summary Writing",
+                  desc: "Agent C takes the analysis from Agent B and produces the final written report. This is your working draft. You can read it, edit it directly in the text editor, and revise it as much as you like before submitting.",
+                },
               ].map((step, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="w-6 h-6 bg-gray-900 text-white rounded-full text-xs font-medium flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
                   <div>
                     <p className="text-sm font-medium text-gray-800">{step.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{step.desc}</p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">What to Keep in Mind</p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Read each agent output carefully before moving to the next step.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>You may edit the final summary produced by Agent C before submitting.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>There are no right or wrong answers. Your judgment matters.</li>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Your Role</p>
+            <ul className="space-y-2.5 text-sm text-gray-600">
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>At the start, you can provide the Orchestrator with your task description and any specific requirements or constraints.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>After the pipeline completes, you will see the Orchestrator's full activity log showing every decision and handoff between agents.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>If you are not satisfied with the result, you can give the Orchestrator written feedback and it will re-run the full pipeline incorporating your guidance.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Edit the final report from Agent C as you see fit before submitting it as your answer.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>There are no right or wrong answers — your judgment about quality and relevance is what matters.</li>
             </ul>
           </div>
         </div>
@@ -65,32 +79,38 @@ export default function InstructionsPage() {
         <div className="space-y-4 mb-8">
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">How It Works</p>
-            <p className="text-sm text-gray-700 leading-relaxed mb-4">
-              Three AI agents will independently produce an industry report on the same topic at the same time. Each agent has a different writing style.
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+              In Competitive Mode, all three agents tackle the same task independently and simultaneously, each bringing a different writing style and perspective. An Orchestrator manages the full process: assigning the task, collecting outputs, running a critique round in which the agents evaluate each other's work, and then selecting the strongest version.
             </p>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {[
-                { label: "Agent A", desc: "Uses a large language model with an analytical writing style." },
-                { label: "Agent B", desc: "Uses a large language model with a narrative writing style." },
-                { label: "Agent C", desc: "Uses a large language model with a critical writing style." },
+                { label: "Agent A — Analytical Style", desc: "Approaches the task with a structured, data-driven lens. Focuses on logical argument, evidence hierarchies, and quantitative reasoning." },
+                { label: "Agent B — Narrative Style", desc: "Approaches the task with a storytelling lens. Focuses on context, flow, and making complex information accessible and engaging for a general audience." },
+                { label: "Agent C — Critical Style", desc: "Approaches the task with a questioning lens. Focuses on assumptions, trade-offs, counter-arguments, and what the other perspectives may have missed." },
               ].map((agent, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="w-6 h-6 bg-gray-900 text-white rounded-full text-xs font-medium flex items-center justify-center flex-shrink-0 mt-0.5">{String.fromCharCode(65 + i)}</span>
                   <div>
                     <p className="text-sm font-medium text-gray-800">{agent.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{agent.desc}</p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{agent.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">What to Keep in Mind</p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Read all three outputs before making your selection.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Select the response you find most useful for the task.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>You may edit the selected response before submitting.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>There are no right or wrong answers. Your judgment matters.</li>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">The Process</p>
+            <div className="space-y-2.5 text-sm text-gray-600 mb-4">
+              <p className="text-xs text-gray-600 leading-relaxed">Once the agents have submitted their reports, they each write a critique of the other two. The Orchestrator then reviews all outputs and critiques and selects the version it considers strongest, providing a written rationale for its decision.</p>
+              <p className="text-xs text-gray-600 leading-relaxed mt-2">You will see the full Orchestrator log, all three agent outputs, and each agent's critique, so you can make a fully informed judgment.</p>
+            </div>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Your Role</p>
+            <ul className="space-y-2.5 text-sm text-gray-600">
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>At the start, you can describe your task and any preferences — such as desired tone, focus areas, or target audience.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Read all three agent outputs and critiques carefully before deciding.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Use the "Use this" button next to the agent whose output you prefer. You are not required to follow the Orchestrator's selection.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Edit the selected report in the text editor before submitting it as your final answer.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>If none of the outputs satisfy you, you can ask the Orchestrator to run another round with your feedback.</li>
             </ul>
           </div>
         </div>

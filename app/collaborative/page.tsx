@@ -120,6 +120,12 @@ export default function CollaborativePage() {
 
   const [phase, setPhase] = useState<"brief" | "running" | "complete">("brief");
   const [userBrief, setUserBrief] = useState("");
+  const [userTask, setUserTask] = useState("");
+  const [preferences, setPreferences] = useState("");
+  const [agentAInstruction, setAgentAInstruction] = useState("");
+  const [agentBInstruction, setAgentBInstruction] = useState("");
+  const [agentCInstruction, setAgentCInstruction] = useState("");
+  const [showAgentAssign, setShowAgentAssign] = useState(false);
   const [disagreeText, setDisagreeText] = useState("");
   const [showDisagree, setShowDisagree] = useState(false);
   const [rounds, setRounds] = useState<Round[]>([]);
@@ -142,7 +148,7 @@ export default function CollaborativePage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
-  async function runPipeline(message: string, roundNum: number) {
+  async function runPipeline(message: string, roundNum: number, topicOverride?: string) {
     setPhase("running");
     setError(null);
     logEvent("orchestrator_start", { round: roundNum, message });
@@ -152,7 +158,7 @@ export default function CollaborativePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topic: TASK.topic,
+          topic: topicOverride ?? TASK.topic,
           userMessage: message,
           previousSummary: currentRound?.summary ?? null,
           round: roundNum,
@@ -185,11 +191,14 @@ export default function CollaborativePage() {
   }
 
   function handleStart() {
-    if (!userBrief.trim() && rounds.length === 0) {
-      runPipeline("No specific requirements.", 1);
-    } else {
-      runPipeline(userBrief.trim() || "No specific requirements.", 1);
-    }
+    const taskInput = userTask.trim() || TASK.topic;
+    const combinedMessage = [
+      preferences.trim(),
+      agentAInstruction.trim() ? `Agent A instructions: ${agentAInstruction.trim()}` : "",
+      agentBInstruction.trim() ? `Agent B instructions: ${agentBInstruction.trim()}` : "",
+      agentCInstruction.trim() ? `Agent C instructions: ${agentCInstruction.trim()}` : "",
+    ].filter(Boolean).join("\n") || "No specific requirements.";
+    runPipeline(combinedMessage, 1, taskInput);
   }
 
   function handleDisagree() {
@@ -258,17 +267,88 @@ export default function CollaborativePage() {
 
       {/* Brief phase */}
       {phase === "brief" && (
-        <div className="border border-gray-200 rounded-lg p-6 bg-white">
-          <p className="text-sm font-medium text-gray-900 mb-1">Brief the Orchestrator</p>
-          <p className="text-xs text-gray-400 mb-4">Tell the Orchestrator any specific requirements or focus areas. Leave blank to let it decide.</p>
-          <textarea
-            value={userBrief}
-            onChange={(e) => setUserBrief(e.target.value)}
-            placeholder="e.g. Focus on enterprise adoption, include recent 2024 sources, keep the tone practical..."
-            rows={4}
-            className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors mb-4"
-          />
-          {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+        <div className="border border-gray-200 rounded-lg p-6 bg-white space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Your Task</label>
+            <p className="text-xs text-gray-400 mb-2">Describe the research or reporting task you want the agents to work on.</p>
+            <textarea
+              value={userTask}
+              onChange={(e) => setUserTask(e.target.value)}
+              placeholder="e.g. Write an industry report on the impact of Generative AI on the manufacturing sector"
+              rows={3}
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              Preferences &amp; Requirements <span style={{ fontWeight: 400, color: "#9ca3af" }}>(optional)</span>
+            </label>
+            <p className="text-xs text-gray-400 mb-2">Specify any constraints, tone, audience, or focus areas for the Orchestrator.</p>
+            <textarea
+              value={preferences}
+              onChange={(e) => setPreferences(e.target.value)}
+              placeholder="e.g. Focus on cost implications, keep the tone practical, target audience is senior managers..."
+              rows={3}
+              className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+            />
+          </div>
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAgentAssign((v) => !v)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <svg
+                style={{ transform: showAgentAssign ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Assign specific roles to agents <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>(optional)</span>
+            </button>
+
+            {showAgentAssign && (
+              <div className="mt-4 space-y-4 pl-6 border-l border-gray-100">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent A — Data Collection</label>
+                  <textarea
+                    value={agentAInstruction}
+                    onChange={(e) => setAgentAInstruction(e.target.value)}
+                    placeholder="e.g. Focus on data collection from recent 2023–2024 sources"
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent B — Analysis & Statistics</label>
+                  <textarea
+                    value={agentBInstruction}
+                    onChange={(e) => setAgentBInstruction(e.target.value)}
+                    placeholder="e.g. Include statistical trends and market size data"
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent C — Summary Writing</label>
+                  <textarea
+                    value={agentCInstruction}
+                    onChange={(e) => setAgentCInstruction(e.target.value)}
+                    placeholder="e.g. Write in an executive summary style, 300 words max"
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && <p className="text-sm text-red-500">{error}</p>}
           <button onClick={handleStart} className="w-full bg-gray-900 hover:bg-gray-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
             Start Task
           </button>
