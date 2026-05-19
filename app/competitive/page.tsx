@@ -218,8 +218,10 @@ export default function CompetitivePage() {
         }),
       });
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error ?? "API error");
+        const text = await res.text().catch(() => "");
+        let errMsg = `Server error (HTTP ${res.status})`;
+        try { const j = JSON.parse(text); errMsg = j.error ?? errMsg; } catch { /* not JSON — likely a timeout */ }
+        throw new Error(errMsg);
       }
       const data = await res.json();
 

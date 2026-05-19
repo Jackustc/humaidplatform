@@ -72,33 +72,17 @@ export async function POST(req: NextRequest) {
   const isReRun = round > 1 && previousFinal;
 
   try {
-    // STEP 0: Orchestrator plans (OpenAI)
-    const planRes = await openaiClient.chat.completions.create({
-      model: "gpt-4o",
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: "You are the Main Orchestrator managing a competitive multi-agent system. Three agents (A, B, C) will independently write a report, then critique each other, and you will decide the final version. Return JSON: { \"plan\": string, \"briefForAgents\": string }",
-        },
-        {
-          role: "user",
-          content: isReRun
-            ? `Round ${round}. Previous output:\n${previousFinal}\n\nUser feedback: "${userMessage}"\n\nCreate a revised competition brief addressing the feedback.`
-            : `Task: Industrial report on "${topic}".\nUser preferences: "${userMessage || "No specific preferences."}"\n\nPlan the competition and write a brief for all three agents.`,
-        },
-      ],
-    });
-    const plan = JSON.parse(planRes.choices[0].message.content ?? "{}");
-    const brief = plan.briefForAgents ?? `Write a professional industrial report on "${topic}".`;
-    logs.push(log("coordinator", "plan", plan.plan ?? "Launching competitive pipeline."));
-    logs.push(log("coordinator", "assignment", `Briefing all agents: ${brief}`));
+    // STEP 0: Build brief directly (no extra LLM call)
+    const brief = isReRun
+      ? `Revise your report based on this feedback: "${userMessage}". Previous version:\n${previousFinal}`
+      : `${topic}${userMessage && userMessage !== "No specific requirements." ? `\n\nAdditional requirements: ${userMessage}` : ""}`;
+    logs.push(log("coordinator", "plan", `Launching competitive pipeline for: "${topic}".`));
+    logs.push(log("coordinator", "assignment", `Briefing all agents: ${brief.slice(0, 120)}${brief.length > 120 ? "…" : ""}`));
 
     // STEP 1: All three agents generate in parallel
-    const promptA = `You are Agent A (ChatGPT). Style: Analytical and Structured.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
-    const promptB = `You are Agent B (Groq Llama). Style: Narrative and Flowing.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
-    const promptC = `You are Agent C (DeepSeek). Style: Critical and Concise.\nBrief: ${brief}\nWrite 250-300 words. Return ONLY the report text.`;
+    const promptA = `You are Agent A. Style: Analytical and Structured.\nBrief: ${brief}\nWrite 200 words max. Return ONLY the report text.`;
+    const promptB = `You are Agent B. Style: Narrative and Flowing.\nBrief: ${brief}\nWrite 200 words max. Return ONLY the report text.`;
+    const promptC = `You are Agent C. Style: Critical and Concise.\nBrief: ${brief}\nWrite 200 words max. Return ONLY the report text.`;
 
     const [outputA, outputB, outputC] = await Promise.all([
       openaiClient.chat.completions.create({
@@ -116,9 +100,9 @@ export async function POST(req: NextRequest) {
     // STEP 2: Critique round
     logs.push(log("coordinator", "assignment", "Starting critique round - each agent will evaluate the other two outputs."));
 
-    const critiqueA_prompt = `You are Agent A. Critique Agent B and Agent C outputs (2-3 sentences each).\nAgent B:\n${outputB}\nAgent C:\n${outputC}`;
-    const critiqueB_prompt = `You are Agent B. Critique Agent A and Agent C outputs (2-3 sentences each).\nAgent A:\n${outputA}\nAgent C:\n${outputC}`;
-    const critiqueC_prompt = `You are Agent C. Critique Agent A and Agent B outputs (2-3 sentences each).\nAgent A:\n${outputA}\nAgent B:\n${outputB}`;
+    const critiqueA_prompt = `You are Agent A. In 1-2 sentences each, critique Agent B and Agent C outputs.\nAgent B:\n${outputB}\nAgent C:\n${outputC}`;
+    const critiqueB_prompt = `You are Agent B. In 1-2 sentences each, critique Agent A and Agent C outputs.\nAgent A:\n${outputA}\nAgent C:\n${outputC}`;
+    const critiqueC_prompt = `You are Agent C. In 1-2 sentences each, critique Agent A and Agent B outputs.\nAgent A:\n${outputA}\nAgent B:\n${outputB}`;
 
     const [critiqueA, critiqueB, critiqueC] = await Promise.all([
       openaiClient.chat.completions.create({
