@@ -71,15 +71,15 @@ export default function TaskPage() {
           <div className="space-y-2 mb-6 text-xs text-gray-500 dark:text-gray-400 flex-1">
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">A.</span>
-              <span>Agent A produces a report with an analytical writing style</span>
+              <span>Agent A independently generates its own report</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
-              <span>Agent B produces a report with a narrative writing style</span>
+              <span>Agent B independently generates its own report</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C produces a report with a critical writing style</span>
+              <span>You compare all three and select the one you find most useful</span>
             </div>
           </div>
           <button
