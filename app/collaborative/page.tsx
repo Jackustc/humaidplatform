@@ -32,19 +32,22 @@ type Round = {
   summary: string;
 };
 
-const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
-  orchestrator: { label: "Orchestrator", bg: "bg-gray-900", text: "text-white" },
-  agent_a:      { label: "Agent A",      bg: "bg-blue-100",   text: "text-blue-800" },
-  agent_b:      { label: "Agent B",      bg: "bg-emerald-100", text: "text-emerald-800" },
-  agent_c:      { label: "Agent C",      bg: "bg-violet-100", text: "text-violet-800" },
+const ACTOR_CONFIG: Record<
+  LogEntry["actor"],
+  { label: string; border: string; labelBg: string; labelText: string; cardBg: string; indent: boolean }
+> = {
+  orchestrator: { label: "Orchestrator", border: "border-gray-900", labelBg: "bg-gray-900",    labelText: "text-white",        cardBg: "bg-white",        indent: false },
+  agent_a:      { label: "Agent A",      border: "border-blue-500",  labelBg: "bg-blue-50",     labelText: "text-blue-700",     cardBg: "bg-blue-50/40",   indent: true  },
+  agent_b:      { label: "Agent B",      border: "border-emerald-500", labelBg: "bg-emerald-50", labelText: "text-emerald-700", cardBg: "bg-emerald-50/40", indent: true  },
+  agent_c:      { label: "Agent C",      border: "border-violet-500", labelBg: "bg-violet-50",  labelText: "text-violet-700",  cardBg: "bg-violet-50/40", indent: true  },
 };
 
-const TYPE_PREFIX: Record<LogEntry["type"], string> = {
-  plan:       "📋 Plan",
-  assignment: "→ Assigning",
-  output:     "✓ Output",
-  review:     "🔍 Review",
-  final:      "✅ Complete",
+const TYPE_LABEL: Record<LogEntry["type"], string> = {
+  plan:       "Plan",
+  assignment: "Assignment",
+  output:     "Output",
+  review:     "Review",
+  final:      "Complete",
 };
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
@@ -83,17 +86,19 @@ function useTimer() {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function LogBubble({ entry }: { entry: LogEntry }) {
+function LogCard({ entry }: { entry: LogEntry }) {
   const cfg = ACTOR_CONFIG[entry.actor];
-  const prefix = TYPE_PREFIX[entry.type];
+  const typeLabel = TYPE_LABEL[entry.type];
   return (
-    <div className="flex gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 h-fit mt-0.5 ${cfg.bg} ${cfg.text}`}>
-        {cfg.label}
-      </span>
-      <div>
-        <span className="text-xs font-medium text-gray-400 mr-1.5">{prefix}</span>
-        <span className="text-xs text-gray-600 leading-relaxed">{entry.content}</span>
+    <div className={cfg.indent ? "pl-6" : ""}>
+      <div className={`border-l-4 ${cfg.border} ${cfg.cardBg} rounded-r-lg px-4 py-3 mb-2.5`}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${cfg.labelBg} ${cfg.labelText}`}>
+            {cfg.label}
+          </span>
+          <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">{typeLabel}</span>
+        </div>
+        <p className="text-xs text-gray-700 leading-relaxed">{entry.content}</p>
       </div>
     </div>
   );
@@ -101,11 +106,25 @@ function LogBubble({ entry }: { entry: LogEntry }) {
 
 function LogSkeleton() {
   return (
-    <div className="space-y-3 py-2">
-      {["w-3/4", "w-full", "w-5/6", "w-2/3", "w-full", "w-4/5", "w-3/4", "w-full"].map((w, i) => (
-        <div key={i} className="flex gap-3">
-          <div className="h-5 w-20 bg-gray-200 rounded animate-pulse flex-shrink-0" />
-          <div className={`h-4 bg-gray-100 rounded animate-pulse ${w}`} />
+    <div className="space-y-2.5 py-2">
+      {[
+        { indent: false, w: "w-3/4" },
+        { indent: false, w: "w-full" },
+        { indent: true,  w: "w-5/6" },
+        { indent: false, w: "w-2/3" },
+        { indent: true,  w: "w-full" },
+        { indent: false, w: "w-4/5" },
+        { indent: true,  w: "w-3/4" },
+        { indent: false, w: "w-full" },
+      ].map(({ indent, w }, i) => (
+        <div key={i} className={indent ? "pl-6" : ""}>
+          <div className="border-l-4 border-gray-200 rounded-r-lg px-4 py-3 bg-gray-50 animate-pulse">
+            <div className="flex gap-2 mb-2">
+              <div className="h-4 w-20 bg-gray-200 rounded" />
+              <div className="h-4 w-14 bg-gray-100 rounded" />
+            </div>
+            <div className={`h-3 bg-gray-200 rounded ${w}`} />
+          </div>
         </div>
       ))}
     </div>
@@ -386,8 +405,8 @@ export default function CollaborativePage() {
                 <span className="text-xs text-gray-400">{expandedRounds.has(r.roundNumber) ? "Hide" : "Show"} log</span>
               </button>
               {expandedRounds.has(r.roundNumber) && (
-                <div className="px-5 py-3 divide-y divide-gray-50">
-                  {r.logs.map((entry) => <LogBubble key={entry.id} entry={entry} />)}
+                <div className="px-5 py-4">
+                  {r.logs.map((entry) => <LogCard key={entry.id} entry={entry} />)}
                 </div>
               )}
             </div>
@@ -402,8 +421,8 @@ export default function CollaborativePage() {
               </div>
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">Complete</span>
             </div>
-            <div className="px-5 py-3 divide-y divide-gray-50">
-              {currentRound.logs.map((entry) => <LogBubble key={entry.id} entry={entry} />)}
+            <div className="px-5 py-4">
+              {currentRound.logs.map((entry) => <LogCard key={entry.id} entry={entry} />)}
             </div>
           </div>
 
