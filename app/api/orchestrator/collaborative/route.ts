@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { checkEnv } from "@/lib/env";
+import { callDeepSeek, callGroq, withRetry, Msg } from "@/lib/api-helpers";
 checkEnv();
 
 export const maxDuration = 60;
 
+// Orchestrator uses GPT-4o (needs reliable JSON mode)
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 25000,
@@ -32,6 +34,11 @@ function log(actor: LogEntry["actor"], type: LogEntry["type"], content: string):
   return { id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), actor, type, content };
 }
 
+/** Strip markdown code fences that some models wrap JSON in */
+function stripFences(s: string): string {
+  return s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+}
+
 export async function POST(req: NextRequest) {
   let body: { topic?: string; userMessage?: string; previousSummary?: string; round?: number };
   try {
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest) {
   const isReRun = round > 1 && previousSummary;
 
   try {
-    // ── STEP 0: Orchestrator plans ──
+    // ── STEP 0: Orchestrator plans (GPT-4o) ──────────────────────────────────
     const planRes = await client.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.7,
@@ -71,7 +78,7 @@ Return JSON: { "plan": string, "agentABrief": string }`,
     logs.push(log("orchestrator", "plan", plan.plan ?? "Analysing task and dividing work across the agent pipeline."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent A — ${plan.agentABrief ?? "Generate search keywords for the report topic."}`));
 
-    // ── STEP 1: Agent A — Keywords ──
+    // ── STEP 1: Agent A — Keywords (GPT-4o) ──────────────────────────────────
     const kwRes = await client.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.7,
@@ -84,7 +91,7 @@ Return JSON: { "plan": string, "agentABrief": string }`,
     const keywords: string[] = JSON.parse(kwRes.choices[0].message.content ?? "{}").keywords ?? [];
     logs.push(log("agent_a", "output", `Generated ${keywords.length} keywords: ${keywords.slice(0, 5).join(", ")}${keywords.length > 5 ? ` +${keywords.length - 5} more` : ""}.`));
 
-    // ── STEP 2: Orchestrator reviews A, briefs B ──
+    // ── STEP 2: Orchestrator reviews A, briefs B (GPT-4o) ────────────────────
     const reviewARes = await client.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.5,
@@ -98,20 +105,29 @@ Return JSON: { "plan": string, "agentABrief": string }`,
     logs.push(log("orchestrator", "review", reviewA.review ?? "Keywords reviewed — coverage looks solid. Passing to Agent B."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent B — ${reviewA.agentBBrief ?? "Find relevant industry sources using the provided keywords."}`));
 
-    // ── STEP 3: Agent B — Papers/Sources ──
-    const papersRes = await client.chat.completions.create({
-      model: "gpt-4o",
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: `You are Agent B, a Source Specialist. Find relevant industry reports and research papers. Return JSON: { "papers": [{ "title": string, "authors": string, "year": number, "journal": string, "relevance": "High"|"Medium"|"Low", "summary": string }] }` },
+    // ── STEP 3: Agent B — Papers/Sources (DeepSeek) ──────────────────────────
+    const papersRaw = await withRetry(() =>
+      callDeepSeek([
+        {
+          role: "system",
+          content: `You are Agent B, a Source Specialist in a multi-agent pipeline. Find relevant industry reports and research papers.
+Return ONLY valid JSON — no markdown, no code fences, no explanation.
+Format: { "papers": [{ "title": string, "authors": string, "year": number, "journal": string, "relevance": "High"|"Medium"|"Low", "summary": string }] }`,
+        },
         { role: "user", content: `Orchestrator brief: ${reviewA.agentBBrief ?? `Find 5–7 sources using: ${keywords.slice(0, 8).join(", ")}`}` },
-      ],
-    });
-    const papers: Paper[] = JSON.parse(papersRes.choices[0].message.content ?? "{}").papers ?? [];
+      ] as Msg[], 0.7)
+    ).catch((e) => { throw new Error(`Agent B failed: ${e.message}`); });
+
+    let papers: Paper[] = [];
+    try {
+      papers = JSON.parse(stripFences(papersRaw)).papers ?? [];
+    } catch {
+      // If JSON parse fails, continue with empty papers rather than crashing the pipeline
+      console.warn("[collaborative] Agent B returned non-JSON; continuing with empty papers.");
+    }
     logs.push(log("agent_b", "output", `Retrieved ${papers.length} sources: ${papers.slice(0, 2).map(p => `"${p.title}"`).join(", ")}${papers.length > 2 ? ` +${papers.length - 2} more` : ""}.`));
 
-    // ── STEP 4: Orchestrator reviews B, briefs C ──
+    // ── STEP 4: Orchestrator reviews B, briefs C (GPT-4o) ────────────────────
     const reviewBRes = await client.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.5,
@@ -125,20 +141,18 @@ Return JSON: { "plan": string, "agentABrief": string }`,
     logs.push(log("orchestrator", "review", reviewB.review ?? "Sources reviewed — good coverage and relevance. Passing to Agent C."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent C — ${reviewB.agentCBrief ?? "Synthesise the sources into a professional industrial report."}`));
 
-    // ── STEP 5: Agent C — Report ──
+    // ── STEP 5: Agent C — Report (Groq) ──────────────────────────────────────
     const paperList = papers.map(p => `- ${p.authors} (${p.year}). "${p.title}". ${p.journal}. [${p.summary}]`).join("\n");
-    const summaryRes = await client.chat.completions.create({
-      model: "gpt-4o",
-      temperature: 0.7,
-      messages: [
+    const summary = await withRetry(() =>
+      callGroq([
         { role: "system", content: "You are Agent C, a professional Report Writer. Write clear, authoritative industrial reports synthesising multiple sources. Use in-text citations." },
         { role: "user", content: `Orchestrator brief: ${reviewB.agentCBrief ?? "Write a comprehensive industrial report."}\n\nSources:\n${paperList}\n\nWrite a 3-paragraph professional report (~400 words). Return ONLY the report text.` },
-      ],
-    });
-    const summary = summaryRes.choices[0].message.content ?? "";
+      ] as Msg[], 0.7)
+    ).catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
+
     logs.push(log("agent_c", "output", `Report drafted (${summary.split(/\s+/).length} words). Submitting to Orchestrator for final review.`));
 
-    // ── STEP 6: Orchestrator final message ──
+    // ── STEP 6: Orchestrator final message (GPT-4o) ──────────────────────────
     const finalRes = await client.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.6,
