@@ -2,7 +2,7 @@ export const TASK = {
   title: "Industrial Report: Generative AI",
   topic: "Generative AI in Industry",
   description:
-    "Your task is to write an industrial report about Generative AI. Using AI agents, you will gather keywords, identify relevant sources, and synthesize findings into a cohesive report.",
+    "Your task is to produce an industrial report on Generative AI. A team of AI agents will assist you throughout the process — you will guide, review, and refine their output before submitting your final answer.",
   estimatedTime: "10–15 minutes",
 };
 
