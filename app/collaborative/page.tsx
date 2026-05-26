@@ -32,19 +32,19 @@ type Round = {
   summary: string;
 };
 
-type ActorCfg = {
-  label: string;
-  accentBg: string;
-  badge: string;
-  badgeText: string;
-  isAgent: boolean;
+const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
+  orchestrator: { label: "Orchestrator", bg: "bg-gray-900",     text: "text-white" },
+  agent_a:      { label: "Agent A",      bg: "bg-blue-100",     text: "text-blue-800" },
+  agent_b:      { label: "Agent B",      bg: "bg-emerald-100",  text: "text-emerald-800" },
+  agent_c:      { label: "Agent C",      bg: "bg-violet-100",   text: "text-violet-800" },
 };
 
-const ACTOR_CONFIG: Record<LogEntry["actor"], ActorCfg> = {
-  orchestrator: { label: "Orchestrator", accentBg: "bg-gray-300",    badge: "bg-gray-100",      badgeText: "text-gray-500",     isAgent: false },
-  agent_a:      { label: "Agent A",      accentBg: "bg-blue-400",    badge: "bg-blue-50",       badgeText: "text-blue-600",     isAgent: true  },
-  agent_b:      { label: "Agent B",      accentBg: "bg-emerald-400", badge: "bg-emerald-50",    badgeText: "text-emerald-600",  isAgent: true  },
-  agent_c:      { label: "Agent C",      accentBg: "bg-violet-400",  badge: "bg-violet-50",     badgeText: "text-violet-600",   isAgent: true  },
+const TYPE_PREFIX: Record<LogEntry["type"], string> = {
+  plan:       "📋 Plan",
+  assignment: "→ Assigning",
+  output:     "✓ Output",
+  review:     "🔍 Review",
+  final:      "✅ Complete",
 };
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
@@ -83,82 +83,30 @@ function useTimer() {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** One sentence from content — stops at first period or 110 chars */
-function firstSentence(s: string, max = 110): string {
-  const dot = s.indexOf(".");
-  const cut = dot > 0 && dot < max ? dot + 1 : max;
-  return s.slice(0, cut) + (s.length > cut ? "…" : "");
-}
-
-function LogCard({ entry }: { entry: LogEntry }) {
+function LogBubble({ entry }: { entry: LogEntry }) {
   const cfg = ACTOR_CONFIG[entry.actor];
-
-  /* ── Agent output card ──────────────────────────────────────────────── */
-  if (cfg.isAgent) {
-    return (
-      <div className="relative pl-5 mb-5">
-        {/* coloured accent stripe */}
-        <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-full ${cfg.accentBg}`} />
-        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm">
-          <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full mb-2.5 ${cfg.badge} ${cfg.badgeText}`}>
-            {cfg.label}
-          </span>
-          <p className="text-sm text-gray-700 leading-relaxed">{entry.content}</p>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Orchestrator row — single compact line, no expand ──────────────── */
-  /* Skip noisy "assignment" entries; only show plan, review, final */
-  if (entry.type === "assignment") {
-    return (
-      <div className="flex items-center gap-2 mb-3 px-1">
-        <div className="h-px flex-1 bg-gray-100" />
-        <span className="text-[10px] text-gray-300 whitespace-nowrap">
-          {entry.content.match(/Agent\s[ABC]/)?.[0] ?? "Agent"} briefed
-        </span>
-        <div className="h-px flex-1 bg-gray-100" />
-      </div>
-    );
-  }
-
+  const prefix = TYPE_PREFIX[entry.type];
   return (
-    <div className="flex items-start gap-2.5 mb-4 px-1">
-      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-[5px]" />
-      <p className="text-xs text-gray-400 leading-relaxed">
-        <span className="font-medium text-gray-500">Orchestrator</span>
-        {" · "}
-        {firstSentence(entry.content)}
-      </p>
+    <div className="flex gap-3 py-2.5 border-b border-gray-50 last:border-0">
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 h-fit mt-0.5 ${cfg.bg} ${cfg.text}`}>
+        {cfg.label}
+      </span>
+      <div>
+        <span className="text-xs font-medium text-gray-400 mr-1.5">{prefix}</span>
+        <span className="text-xs text-gray-600 leading-relaxed">{entry.content}</span>
+      </div>
     </div>
   );
 }
 
 function LogSkeleton() {
   return (
-    <div className="space-y-4 py-2">
-      <div className="flex items-start gap-2.5 px-1 animate-pulse">
-        <div className="w-1.5 h-1.5 rounded-full bg-gray-200 mt-1 flex-shrink-0" />
-        <div className="h-3 bg-gray-100 rounded w-2/3" />
-      </div>
-      {[true, false, true, false, true].map((isAgent, i) => (
-        isAgent ? (
-          <div key={i} className="relative pl-5 animate-pulse">
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-gray-200" />
-            <div className="bg-white border border-gray-100 rounded-xl px-5 py-4">
-              <div className="h-4 w-16 bg-gray-100 rounded-full mb-3" />
-              <div className="h-3 bg-gray-100 rounded w-full mb-2" />
-              <div className="h-3 bg-gray-100 rounded w-4/5" />
-            </div>
-          </div>
-        ) : (
-          <div key={i} className="flex items-center gap-2 px-1 animate-pulse">
-            <div className="h-px flex-1 bg-gray-100" />
-            <div className="h-2.5 w-16 bg-gray-100 rounded" />
-            <div className="h-px flex-1 bg-gray-100" />
-          </div>
-        )
+    <div className="space-y-3 py-2">
+      {["w-3/4", "w-full", "w-5/6", "w-2/3", "w-full", "w-4/5", "w-3/4", "w-full"].map((w, i) => (
+        <div key={i} className="flex gap-3">
+          <div className="h-5 w-20 bg-gray-200 rounded animate-pulse flex-shrink-0" />
+          <div className={`h-4 bg-gray-100 rounded animate-pulse ${w}`} />
+        </div>
       ))}
     </div>
   );
@@ -438,8 +386,8 @@ export default function CollaborativePage() {
                 <span className="text-xs text-gray-400">{expandedRounds.has(r.roundNumber) ? "Hide" : "Show"} log</span>
               </button>
               {expandedRounds.has(r.roundNumber) && (
-                <div className="px-5 py-4">
-                  {r.logs.map((entry) => <LogCard key={entry.id} entry={entry} />)}
+                <div className="px-5 py-3 divide-y divide-gray-50">
+                  {r.logs.map((entry) => <LogBubble key={entry.id} entry={entry} />)}
                 </div>
               )}
             </div>
@@ -454,8 +402,8 @@ export default function CollaborativePage() {
               </div>
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">Complete</span>
             </div>
-            <div className="px-5 py-4">
-              {currentRound.logs.map((entry) => <LogCard key={entry.id} entry={entry} />)}
+            <div className="px-5 py-3 divide-y divide-gray-50">
+              {currentRound.logs.map((entry) => <LogBubble key={entry.id} entry={entry} />)}
             </div>
           </div>
 
