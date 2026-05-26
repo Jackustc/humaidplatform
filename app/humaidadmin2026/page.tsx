@@ -148,24 +148,35 @@ function LogModal({ session, onClose }: { session: Session; onClose: () => void 
                   </div>
                 )}
 
-                {/* Log entries */}
+                {/* Log entries — table format */}
                 {round.logs && round.logs.length > 0 ? (
-                  <div className="border border-gray-100 rounded-lg divide-y divide-gray-50">
-                    {round.logs.map((entry, i) => {
-                      const style = ACTOR_STYLE[entry.actor] ?? { bg: "bg-gray-100", text: "text-gray-700", label: entry.actor };
-                      const prefix = TYPE_LABEL[entry.type] ?? entry.type;
-                      return (
-                        <div key={entry.id ?? i} className="flex gap-3 px-4 py-2.5">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 h-fit mt-0.5 ${style.bg} ${style.text}`}>
-                            {style.label}
-                          </span>
-                          <div>
-                            <span className="text-xs font-medium text-gray-400 mr-1.5">{prefix}</span>
-                            <span className="text-xs text-gray-600 leading-relaxed">{entry.content}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="border border-gray-100 rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-100">
+                          <th className="text-left px-3 py-2 font-semibold text-gray-500 w-24">Actor</th>
+                          <th className="text-left px-3 py-2 font-semibold text-gray-500 w-24">Type</th>
+                          <th className="text-left px-3 py-2 font-semibold text-gray-500">Content</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {round.logs.map((entry, i) => {
+                          const style = ACTOR_STYLE[entry.actor] ?? { bg: "bg-gray-100", text: "text-gray-700", label: entry.actor };
+                          const prefix = TYPE_LABEL[entry.type] ?? entry.type;
+                          return (
+                            <tr key={entry.id ?? i} className="align-top hover:bg-gray-50/50">
+                              <td className="px-3 py-2.5">
+                                <span className={`inline-block font-semibold px-1.5 py-0.5 rounded text-[10px] ${style.bg} ${style.text}`}>
+                                  {style.label}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-gray-400 whitespace-nowrap">{prefix}</td>
+                              <td className="px-3 py-2.5 text-gray-600 leading-relaxed">{entry.content}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-300 pl-1">No log entries for this round.</p>

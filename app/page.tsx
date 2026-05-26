@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <div className="mb-8 text-center" style={{ textAlign: "center" }}>
           <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">HUMAID Study</p>
           <h1 className="text-2xl font-semibold text-gray-900 mb-1">Welcome</h1>

@@ -217,14 +217,6 @@ export default function SubmitPage() {
           </div>
         </div>
 
-        <div style={{ textAlign: "center" }}>
-          <Link
-            href="/"
-            className="inline-block border border-gray-300 hover:border-gray-500 text-gray-700 text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
-          >
-            Start a new session
-          </Link>
-        </div>
       </div>
     );
   }

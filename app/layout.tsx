@@ -23,9 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
               <span className="text-lg font-bold text-gray-900 tracking-tight">HUMAID Platform</span>
             </a>
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-gray-400 font-mono hidden sm:inline">Research Prototype v1</span>
-            </div>
+            <div className="flex items-center gap-4"></div>
           </div>
         </nav>
         <ProgressBar />

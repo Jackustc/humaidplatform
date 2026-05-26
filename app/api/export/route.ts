@@ -76,10 +76,57 @@ export async function GET() {
       }
     }
 
+    // --- Chat history CSV ---
+    const chatHeader = [
+      "session_id", "participant_id", "mode", "round_number", "actor", "entry_type", "content",
+    ].map(esc).join(",");
+
+    const chatRows: string[] = [];
+    for (const s of sessions) {
+      const rounds = (s.rounds ?? []) as Record<string, unknown>[];
+      for (const r of rounds) {
+        const rNum = r.roundNumber ?? "";
+        // User message for this round
+        if (r.userMessage) {
+          chatRows.push([
+            s.sessionId, s.participantId ?? "", s.mode,
+            rNum, "user", "message", r.userMessage,
+          ].map(esc).join(","));
+        }
+        // Orchestrator / agent log entries
+        const logs = (r.logs ?? []) as Record<string, unknown>[];
+        for (const entry of logs) {
+          chatRows.push([
+            s.sessionId, s.participantId ?? "", s.mode,
+            rNum, entry.actor, entry.type, entry.content,
+          ].map(esc).join(","));
+        }
+        // Competitive agent outputs
+        const agentOutputs = (r.agentOutputs ?? []) as Record<string, unknown>[];
+        for (const agent of agentOutputs) {
+          chatRows.push([
+            s.sessionId, s.participantId ?? "", s.mode,
+            rNum, agent.name, "agent_output", agent.output,
+          ].map(esc).join(","));
+          if (agent.critique) {
+            chatRows.push([
+              s.sessionId, s.participantId ?? "", s.mode,
+              rNum, agent.name, "critique", agent.critique,
+            ].map(esc).join(","));
+          }
+        }
+      }
+    }
+
     const csv = [
       "SESSION SUMMARY",
       sessionHeader,
       ...sessionRows,
+      "",
+      "",
+      "CHAT HISTORY",
+      chatHeader,
+      ...chatRows,
       "",
       "",
       "EVENT STREAM",

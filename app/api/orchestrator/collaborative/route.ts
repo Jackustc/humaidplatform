@@ -146,7 +146,7 @@ Format: { "papers": [{ "title": string, "authors": string, "year": number, "jour
     const summary = await withRetry(() =>
       callGroq([
         { role: "system", content: "You are Agent C, a professional Report Writer. Write clear, authoritative industrial reports synthesising multiple sources. Use in-text citations." },
-        { role: "user", content: `Orchestrator brief: ${reviewB.agentCBrief ?? "Write a comprehensive industrial report."}\n\nSources:\n${paperList}\n\nWrite a 3-paragraph professional report (~400 words). Return ONLY the report text.` },
+        { role: "user", content: `Orchestrator brief: ${reviewB.agentCBrief ?? "Write a comprehensive industrial report."}\n\nSources:\n${paperList}\n\nWrite a 3-paragraph professional report (~400 words) with in-text citations. Then add a "References" section at the end listing every cited source in APA format. Return ONLY the report text followed by the References section.` },
       ] as Msg[], 0.7)
     ).catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
 
