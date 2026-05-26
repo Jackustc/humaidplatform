@@ -34,26 +34,17 @@ type Round = {
 
 type ActorCfg = {
   label: string;
-  dot: string;
-  border: string;
+  accentBg: string;
   badge: string;
   badgeText: string;
   isAgent: boolean;
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], ActorCfg> = {
-  orchestrator: { label: "Orchestrator", dot: "bg-gray-400",    border: "border-gray-200", badge: "bg-gray-100",    badgeText: "text-gray-600",     isAgent: false },
-  agent_a:      { label: "Agent A",      dot: "bg-blue-400",    border: "border-blue-200", badge: "bg-blue-100",    badgeText: "text-blue-700",     isAgent: true  },
-  agent_b:      { label: "Agent B",      dot: "bg-emerald-400", border: "border-emerald-200", badge: "bg-emerald-100", badgeText: "text-emerald-700", isAgent: true  },
-  agent_c:      { label: "Agent C",      dot: "bg-violet-400",  border: "border-violet-200", badge: "bg-violet-100", badgeText: "text-violet-700",  isAgent: true  },
-};
-
-const TYPE_ICON: Record<LogEntry["type"], string> = {
-  plan:       "📋",
-  assignment: "→",
-  output:     "✓",
-  review:     "◎",
-  final:      "✅",
+  orchestrator: { label: "Orchestrator", accentBg: "bg-gray-300",    badge: "bg-gray-100",      badgeText: "text-gray-500",     isAgent: false },
+  agent_a:      { label: "Agent A",      accentBg: "bg-blue-400",    badge: "bg-blue-50",       badgeText: "text-blue-600",     isAgent: true  },
+  agent_b:      { label: "Agent B",      accentBg: "bg-emerald-400", badge: "bg-emerald-50",    badgeText: "text-emerald-600",  isAgent: true  },
+  agent_c:      { label: "Agent C",      accentBg: "bg-violet-400",  badge: "bg-violet-50",     badgeText: "text-violet-600",   isAgent: true  },
 };
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
@@ -92,85 +83,82 @@ function useTimer() {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function LogCard({ entry }: { entry: LogEntry }) {
-  const [expanded, setExpanded] = useState(false);
-  const cfg = ACTOR_CONFIG[entry.actor];
-  const icon = TYPE_ICON[entry.type];
-  const isLong = entry.content.length > 160;
+/** One sentence from content — stops at first period or 110 chars */
+function firstSentence(s: string, max = 110): string {
+  const dot = s.indexOf(".");
+  const cut = dot > 0 && dot < max ? dot + 1 : max;
+  return s.slice(0, cut) + (s.length > cut ? "…" : "");
+}
 
+function LogCard({ entry }: { entry: LogEntry }) {
+  const cfg = ACTOR_CONFIG[entry.actor];
+
+  /* ── Agent output card ──────────────────────────────────────────────── */
   if (cfg.isAgent) {
-    // Agent entries — prominent, coloured border card
     return (
-      <div className="ml-6 mb-3">
-        <div className={`border ${cfg.border} rounded-lg p-4 bg-white shadow-sm`}>
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cfg.badge} ${cfg.badgeText}`}>
-              {cfg.label}
-            </span>
-            <span className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">{icon} Output</span>
-          </div>
+      <div className="relative pl-5 mb-5">
+        {/* coloured accent stripe */}
+        <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-full ${cfg.accentBg}`} />
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm">
+          <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full mb-2.5 ${cfg.badge} ${cfg.badgeText}`}>
+            {cfg.label}
+          </span>
           <p className="text-sm text-gray-700 leading-relaxed">{entry.content}</p>
         </div>
       </div>
     );
   }
 
-  // Orchestrator entries — compact, minimal, expandable
+  /* ── Orchestrator row — single compact line, no expand ──────────────── */
+  /* Skip noisy "assignment" entries; only show plan, review, final */
+  if (entry.type === "assignment") {
+    return (
+      <div className="flex items-center gap-2 mb-3 px-1">
+        <div className="h-px flex-1 bg-gray-100" />
+        <span className="text-[10px] text-gray-300 whitespace-nowrap">
+          {entry.content.match(/Agent\s[ABC]/)?.[0] ?? "Agent"} briefed
+        </span>
+        <div className="h-px flex-1 bg-gray-100" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex gap-3 mb-3 items-start">
-      <div className="flex flex-col items-center pt-1 flex-shrink-0">
-        <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-        <div className="w-px flex-1 bg-gray-100 mt-1 min-h-[1rem]" />
-      </div>
-      <div className="flex-1 pb-1">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Orchestrator</span>
-          <span className="text-[10px] text-gray-300">·</span>
-          <span className="text-[10px] text-gray-400">{icon} {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}</span>
-        </div>
-        <p className={`text-xs text-gray-500 leading-relaxed ${!expanded && isLong ? "line-clamp-2" : ""}`}>
-          {entry.content}
-        </p>
-        {isLong && (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="text-[10px] text-gray-400 hover:text-gray-600 mt-0.5 transition-colors"
-          >
-            {expanded ? "Show less ↑" : "Show more ↓"}
-          </button>
-        )}
-      </div>
+    <div className="flex items-start gap-2.5 mb-4 px-1">
+      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0 mt-[5px]" />
+      <p className="text-xs text-gray-400 leading-relaxed">
+        <span className="font-medium text-gray-500">Orchestrator</span>
+        {" · "}
+        {firstSentence(entry.content)}
+      </p>
     </div>
   );
 }
 
 function LogSkeleton() {
   return (
-    <div className="space-y-3 py-2">
-      {[false, false, true, false, true, false, true, false].map((isAgent, i) => (
-        <div key={i} className={isAgent ? "ml-6" : "flex gap-3 items-start"}>
-          {!isAgent && (
-            <div className="flex flex-col items-center pt-1 flex-shrink-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
-            </div>
-          )}
-          {isAgent ? (
-            <div className="border border-gray-100 rounded-lg p-4 bg-white animate-pulse">
-              <div className="flex gap-2 mb-2">
-                <div className="h-4 w-16 bg-gray-200 rounded-full" />
-                <div className="h-4 w-12 bg-gray-100 rounded" />
-              </div>
-              <div className="h-3 bg-gray-100 rounded w-full mb-1" />
+    <div className="space-y-4 py-2">
+      <div className="flex items-start gap-2.5 px-1 animate-pulse">
+        <div className="w-1.5 h-1.5 rounded-full bg-gray-200 mt-1 flex-shrink-0" />
+        <div className="h-3 bg-gray-100 rounded w-2/3" />
+      </div>
+      {[true, false, true, false, true].map((isAgent, i) => (
+        isAgent ? (
+          <div key={i} className="relative pl-5 animate-pulse">
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full bg-gray-200" />
+            <div className="bg-white border border-gray-100 rounded-xl px-5 py-4">
+              <div className="h-4 w-16 bg-gray-100 rounded-full mb-3" />
+              <div className="h-3 bg-gray-100 rounded w-full mb-2" />
               <div className="h-3 bg-gray-100 rounded w-4/5" />
             </div>
-          ) : (
-            <div className="flex-1 animate-pulse">
-              <div className="h-2.5 bg-gray-100 rounded w-24 mb-1.5" />
-              <div className="h-3 bg-gray-100 rounded w-full mb-1" />
-              <div className="h-3 bg-gray-100 rounded w-3/4" />
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div key={i} className="flex items-center gap-2 px-1 animate-pulse">
+            <div className="h-px flex-1 bg-gray-100" />
+            <div className="h-2.5 w-16 bg-gray-100 rounded" />
+            <div className="h-px flex-1 bg-gray-100" />
+          </div>
+        )
       ))}
     </div>
   );
