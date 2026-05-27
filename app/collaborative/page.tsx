@@ -309,7 +309,7 @@ export default function CollaborativePage() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              Assign specific roles to agents <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>(optional)</span>
+              Assign specific roles to agents
             </button>
 
             {showAgentAssign && (
