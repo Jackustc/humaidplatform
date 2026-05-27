@@ -383,13 +383,13 @@ export default function CompetitivePage() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              Assign specific roles to agents <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>(optional)</span>
+              Assign specific styles to agents <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>(optional)</span>
             </button>
 
             {showAgentAssign && (
               <div className="mt-4 space-y-4 pl-6 border-l border-gray-100">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent A — Analytical Style</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent A — Style</label>
                   <textarea
                     value={agentAInstruction}
                     onChange={(e) => setAgentAInstruction(e.target.value)}
@@ -399,7 +399,7 @@ export default function CompetitivePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent B — Narrative Style</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent B — Style</label>
                   <textarea
                     value={agentBInstruction}
                     onChange={(e) => setAgentBInstruction(e.target.value)}
@@ -409,7 +409,7 @@ export default function CompetitivePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent C — Critical Style</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent C — Style</label>
                   <textarea
                     value={agentCInstruction}
                     onChange={(e) => setAgentCInstruction(e.target.value)}
