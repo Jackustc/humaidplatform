@@ -306,6 +306,12 @@ export default function AdminPage() {
             >
               Export CSV
             </a>
+            <a
+              href="/api/export?format=json"
+              className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
+            >
+              Export JSON
+            </a>
             <button
               onClick={async () => {
                 await fetch("/api/admin/logout", { method: "POST" });
