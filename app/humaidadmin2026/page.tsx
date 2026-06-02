@@ -252,13 +252,46 @@ function avgNum(arr: number[]): number {
   return parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2));
 }
 
-const tickStyle = { fontSize: 10, fill: "#9ca3af" };
-
 // ── Admin Page ───────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeLog, setActiveLog] = useState<Session | null>(null);
+  const [dark, setDark] = useState(false);
+
+  // Detect dark mode (mirrors ThemeToggle logic)
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  // Theme-aware chart values
+  const tick        = { fontSize: 10, fill: dark ? "#aaaaaa" : "#9ca3af" };
+  const tooltipStyle = {
+    fontSize: 11, borderRadius: 6,
+    background: dark ? "#1e1e1e" : "#ffffff",
+    border: dark ? "1px solid #444444" : "1px solid #e5e7eb",
+    color: dark ? "#f0f0f0" : "#111827",
+  };
+  const cursorFill  = dark ? "#2a2a2a" : "#f9fafb";
+
+  // Pie colours — always contrast-safe
+  const PIE_MODE   = dark ? ["#60a5fa", "#a78bfa"] : ["#111827", "#9ca3af"];
+  const PIE_ACCEPT = dark ? ["#34d399", "#f87171"] : ["#111827", "#d1d5db"];
+
+  // Bar colours
+  const BAR_PRIMARY   = dark ? "#60a5fa" : "#111827";
+  const BAR_SECONDARY = dark ? "#a78bfa" : "#6b7280";
+  const BAR_SURVEY    = dark ? "#34d399" : "#374151";
+  const BAR_TOTAL     = dark ? "#94a3b8" : "#9ca3af";
+  const BAR_EDITED    = dark ? "#f87171" : "#111827";
+
+  const legendText = (value: string) => (
+    <span style={{ fontSize: 11, color: dark ? "#cccccc" : "#6b7280" }}>{value}</span>
+  );
 
   useEffect(() => {
     fetch("/api/sessions")
@@ -465,18 +498,11 @@ export default function AdminPage() {
                       paddingAngle={collaborative.length && competitive.length ? 3 : 0}
                       dataKey="value"
                     >
-                      <Cell fill="#111827" />
-                      <Cell fill="#9ca3af" />
+                      <Cell fill={PIE_MODE[0]} />
+                      <Cell fill={PIE_MODE[1]} />
                     </Pie>
-                    <Tooltip
-                      formatter={(value) => [`${value} session${Number(value) !== 1 ? "s" : ""}`, ""]}
-                      contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
-                    />
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      formatter={(value) => <span style={{ fontSize: 11, color: "#6b7280" }}>{value}</span>}
-                    />
+                    <Tooltip formatter={(value) => [`${value} session${Number(value) !== 1 ? "s" : ""}`, ""]} contentStyle={tooltipStyle} />
+                    <Legend iconType="circle" iconSize={8} formatter={legendText} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -497,18 +523,11 @@ export default function AdminPage() {
                       paddingAngle={edited.length && edited.length < sessions.length ? 3 : 0}
                       dataKey="value"
                     >
-                      <Cell fill="#111827" />
-                      <Cell fill="#d1d5db" />
+                      <Cell fill={PIE_ACCEPT[0]} />
+                      <Cell fill={PIE_ACCEPT[1]} />
                     </Pie>
-                    <Tooltip
-                      formatter={(value) => [`${value} session${Number(value) !== 1 ? "s" : ""}`, ""]}
-                      contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }}
-                    />
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      formatter={(value) => <span style={{ fontSize: 11, color: "#6b7280" }}>{value}</span>}
-                    />
+                    <Tooltip formatter={(value) => [`${value} session${Number(value) !== 1 ? "s" : ""}`, ""]} contentStyle={tooltipStyle} />
+                    <Legend iconType="circle" iconSize={8} formatter={legendText} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -521,10 +540,10 @@ export default function AdminPage() {
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Mode Distribution</p>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={modeData} barCategoryGap="40%">
-                    <XAxis dataKey="mode" tick={tickStyle} axisLine={false} tickLine={false} />
-                    <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }} cursor={{ fill: "#f9fafb" }} />
-                    <Bar dataKey="count" fill="#111827" radius={[3, 3, 0, 0]} />
+                    <XAxis dataKey="mode" tick={tick} axisLine={false} tickLine={false} />
+                    <YAxis tick={tick} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: cursorFill }} />
+                    <Bar dataKey="count" fill={BAR_PRIMARY} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -533,10 +552,10 @@ export default function AdminPage() {
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Confidence Rating Distribution</p>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={confidenceData} barCategoryGap="30%">
-                    <XAxis dataKey="rating" tick={tickStyle} axisLine={false} tickLine={false} />
-                    <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }} cursor={{ fill: "#f9fafb" }} />
-                    <Bar dataKey="count" fill="#6b7280" radius={[3, 3, 0, 0]} />
+                    <XAxis dataKey="rating" tick={tick} axisLine={false} tickLine={false} />
+                    <YAxis tick={tick} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: cursorFill }} />
+                    <Bar dataKey="count" fill={BAR_SECONDARY} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -545,10 +564,10 @@ export default function AdminPage() {
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Survey Averages Comparison</p>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={surveyAvgData} barCategoryGap="40%">
-                    <XAxis dataKey="label" tick={tickStyle} axisLine={false} tickLine={false} />
-                    <YAxis tick={tickStyle} axisLine={false} tickLine={false} domain={[0, 5]} />
-                    <Tooltip contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }} cursor={{ fill: "#f9fafb" }} />
-                    <Bar dataKey="value" fill="#374151" radius={[3, 3, 0, 0]} />
+                    <XAxis dataKey="label" tick={tick} axisLine={false} tickLine={false} />
+                    <YAxis tick={tick} axisLine={false} tickLine={false} domain={[0, 5]} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: cursorFill }} />
+                    <Bar dataKey="value" fill={BAR_SURVEY} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -557,11 +576,11 @@ export default function AdminPage() {
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">Edit Rate by Mode</p>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={editRateData} barCategoryGap="30%">
-                    <XAxis dataKey="mode" tick={tickStyle} axisLine={false} tickLine={false} />
-                    <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6 }} cursor={{ fill: "#f9fafb" }} />
-                    <Bar dataKey="total"  fill="#9ca3af" radius={[3, 3, 0, 0]} name="Total" />
-                    <Bar dataKey="edited" fill="#111827" radius={[3, 3, 0, 0]} name="Edited" />
+                    <XAxis dataKey="mode" tick={tick} axisLine={false} tickLine={false} />
+                    <YAxis tick={tick} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: cursorFill }} />
+                    <Bar dataKey="total"  fill={BAR_TOTAL}  radius={[3, 3, 0, 0]} name="Total" />
+                    <Bar dataKey="edited" fill={BAR_EDITED} radius={[3, 3, 0, 0]} name="Edited" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
