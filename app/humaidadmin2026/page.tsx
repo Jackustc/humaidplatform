@@ -350,26 +350,11 @@ export default function AdminPage() {
               Export Excel
             </a>
             <a
-              href="/api/export"
-              className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
-            >
-              Export CSV
-            </a>
-            <a
               href="/api/export?format=json"
               className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
             >
               Export JSON
             </a>
-            <button
-              onClick={async () => {
-                await fetch("/api/admin/logout", { method: "POST" });
-                window.location.href = "/humaidadmin2026/login";
-              }}
-              className="flex-shrink-0 text-sm font-medium text-gray-400 hover:text-gray-700 px-3 py-2 transition-colors"
-            >
-              Log out
-            </button>
           </div>
         </div>
 
@@ -588,6 +573,22 @@ export default function AdminPage() {
             </p>
           </>
         )}
+
+        {/* Log out — bottom of page */}
+        <div className="mt-10 pt-6 border-t border-gray-200 flex justify-center">
+          <button
+            onClick={async () => {
+              await fetch("/api/admin/logout", { method: "POST" });
+              window.location.href = "/humaidadmin2026/login";
+            }}
+            className="flex items-center gap-2 text-sm font-medium border border-gray-300 hover:border-red-400 text-gray-500 hover:text-red-500 px-5 py-2 rounded-md transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+            </svg>
+            Log out
+          </button>
+        </div>
       </div>
     </>
   );
