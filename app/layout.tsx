@@ -4,6 +4,7 @@ import "./globals.css";
 import { ProgressBar } from "@/components/progress-bar";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AdminLogout } from "@/components/admin-logout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,7 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
               <span className="text-lg font-bold text-gray-900 tracking-tight">HUMAID Platform</span>
             </a>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <AdminLogout />
               <ThemeToggle />
             </div>
           </div>
