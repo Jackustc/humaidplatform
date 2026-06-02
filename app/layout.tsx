@@ -26,8 +26,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="text-lg font-bold text-gray-900 tracking-tight">HUMAID Platform</span>
             </a>
             <div className="flex items-center gap-3">
-              <AdminLogout />
               <ThemeToggle />
+              <AdminLogout />
             </div>
           </div>
         </nav>
