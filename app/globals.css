@@ -41,9 +41,15 @@ html.dark .bg-gray-100 { background-color: #1a1a1a !important; }
 html.dark .bg-gray-200 { background-color: #222222 !important; }
 
 /* ── Borders ─────────────────────────────────────────────────────────────── */
-html.dark .border-gray-100 { border-color: #1e1e1e !important; }
-html.dark .border-gray-200 { border-color: #2a2a2a !important; }
-html.dark .border-gray-300 { border-color: #3a3a3a !important; }
+html.dark .border-gray-100 { border-color: #3a3a3a !important; }
+html.dark .border-gray-200 { border-color: #555555 !important; }
+html.dark .border-gray-300 { border-color: #666666 !important; }
+
+/* Ensure all bordered elements have visible outlines */
+html.dark [class*="border-gray-"] { border-color: #555555 !important; }
+html.dark .border-gray-100 { border-color: #3a3a3a !important; }
+html.dark .border-gray-200 { border-color: #555555 !important; }
+html.dark .border-gray-300 { border-color: #666666 !important; }
 
 /* ── Text ────────────────────────────────────────────────────────────────── */
 html.dark .text-gray-900 { color: #ffffff !important; }
@@ -85,23 +91,24 @@ html.dark .disabled\:bg-gray-100 {
 }
 
 /* Outline / border buttons */
-html.dark .border-gray-300 { border-color: #333333 !important; }
-html.dark .hover\:border-gray-500:hover { border-color: #555555 !important; }
+html.dark .border-gray-300 { border-color: #666666 !important; }
+html.dark .hover\:border-gray-500:hover { border-color: #999999 !important; }
+html.dark .hover\:border-gray-400:hover { border-color: #888888 !important; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
-html.dark table thead tr { border-color: #2a2a2a !important; }
+html.dark table thead tr { border-color: #555555 !important; }
 html.dark table th { color: #888888 !important; }
 html.dark table td { color: #e8e8e8 !important; }
-html.dark table tbody tr { border-color: #1e1e1e !important; }
+html.dark table tbody tr { border-color: #3a3a3a !important; }
 html.dark table tbody tr:hover { background-color: #1a1a1a !important; }
 html.dark .font-mono.text-gray-400 { color: #888888 !important; }
 html.dark .capitalize { color: #e8e8e8 !important; }
 html.dark .whitespace-nowrap { color: #e8e8e8 !important; }
 
 /* ── Dividers ────────────────────────────────────────────────────────────── */
-html.dark .divide-gray-50  > * + * { border-color: #1a1a1a !important; }
-html.dark .divide-gray-100 > * + * { border-color: #222222 !important; }
-html.dark .divide-y        > * + * { border-color: #2a2a2a !important; }
+html.dark .divide-gray-50  > * + * { border-color: #3a3a3a !important; }
+html.dark .divide-gray-100 > * + * { border-color: #3a3a3a !important; }
+html.dark .divide-y        > * + * { border-color: #555555 !important; }
 
 /* ── Agent / actor badges ────────────────────────────────────────────────── */
 /* Orchestrator badge (dark bg in light mode — invert in dark) */
