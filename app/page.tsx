@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="w-full" style={{ maxWidth: "420px" }}>
+      <div className="w-full" style={{ maxWidth: "fit-content" }}>
         <div className="mb-8 text-center" style={{ textAlign: "center" }}>
           <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">HUMAID Study</p>
           <h1 className="text-2xl font-semibold text-gray-900 mb-1">Welcome</h1>
@@ -43,7 +43,8 @@ export default function LoginPage() {
               onKeyDown={handleKeyDown}
               autoFocus
               placeholder="e.g. 686A9312ED364DD58027EE60BDA4XXXX"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-700 focus:outline-none focus:border-gray-400 transition-colors"
+              style={{ width: "calc(37ch + 1.5rem)" }}
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-700 focus:outline-none focus:border-gray-400 transition-colors"
             />
           </div>
 
