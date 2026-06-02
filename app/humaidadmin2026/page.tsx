@@ -312,6 +312,12 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-2">
             <a
+              href="/api/export?format=xlsx"
+              className="flex-shrink-0 text-sm font-medium bg-gray-900 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              Export Excel
+            </a>
+            <a
               href="/api/export"
               className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
             >
