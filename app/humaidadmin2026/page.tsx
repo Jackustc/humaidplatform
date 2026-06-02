@@ -413,7 +413,6 @@ export default function AdminPage() {
                     <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Log</th>
                     <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Duration</th>
                     <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Rounds</th>
-                    <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Agent</th>
                     <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Edited</th>
                     <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Conf.</th>
                     <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Trust</th>
@@ -442,7 +441,6 @@ export default function AdminPage() {
                         {s.startTime && s.endTime ? duration(s.startTime, s.endTime) : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-gray-700 text-center">{s.rounds?.length ?? 1}</td>
-                      <td className="px-3 py-2.5 text-gray-700">{s.selectedAgentName ?? "—"}</td>
                       <td className="px-3 py-2.5">
                         <span className={`px-1.5 py-0.5 rounded font-medium ${s.wasEdited ? "bg-gray-100 text-gray-700" : "text-gray-300"}`}>
                           {s.wasEdited ? "Yes" : "No"}
