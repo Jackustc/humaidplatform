@@ -7,93 +7,137 @@
 body {
   background: #ffffff;
   color: #111827;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* ── Dark mode overrides ──────────────────────────────────────────────────── */
+/* ── Dark mode ────────────────────────────────────────────────────────────── */
 html.dark body {
-  background-color: #0f172a;
-  color: #f1f5f9;
+  background-color: #000000;
+  color: #ffffff;
 }
 
 /* Navbar */
 html.dark nav {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
+  background-color: #0a0a0a !important;
+  border-color: #222222 !important;
 }
 
-/* Backgrounds */
-html.dark .bg-white       { background-color: #1e293b !important; }
-html.dark .bg-gray-50     { background-color: #0f172a !important; }
-html.dark .bg-gray-100    { background-color: #1e293b !important; }
-html.dark .bg-gray-200    { background-color: #334155 !important; }
+/* ── Backgrounds ─────────────────────────────────────────────────────────── */
+html.dark .bg-white    { background-color: #111111 !important; }
+html.dark .bg-gray-50  { background-color: #0a0a0a !important; }
+html.dark .bg-gray-100 { background-color: #1a1a1a !important; }
+html.dark .bg-gray-200 { background-color: #222222 !important; }
 
-/* Borders */
-html.dark .border-gray-100 { border-color: #1e293b !important; }
-html.dark .border-gray-200 { border-color: #334155 !important; }
-html.dark .border-gray-300 { border-color: #475569 !important; }
+/* ── Borders ─────────────────────────────────────────────────────────────── */
+html.dark .border-gray-100 { border-color: #1e1e1e !important; }
+html.dark .border-gray-200 { border-color: #2a2a2a !important; }
+html.dark .border-gray-300 { border-color: #3a3a3a !important; }
 
-/* Text */
-html.dark .text-gray-900  { color: #f1f5f9 !important; }
-html.dark .text-gray-800  { color: #e2e8f0 !important; }
-html.dark .text-gray-700  { color: #cbd5e1 !important; }
-html.dark .text-gray-600  { color: #94a3b8 !important; }
-html.dark .text-gray-500  { color: #64748b !important; }
-html.dark .text-gray-400  { color: #475569 !important; }
+/* ── Text ────────────────────────────────────────────────────────────────── */
+html.dark .text-gray-900 { color: #ffffff !important; }
+html.dark .text-gray-800 { color: #f0f0f0 !important; }
+html.dark .text-gray-700 { color: #e0e0e0 !important; }
+html.dark .text-gray-600 { color: #b0b0b0 !important; }
+html.dark .text-gray-500 { color: #888888 !important; }
+html.dark .text-gray-400 { color: #666666 !important; }
+html.dark .text-gray-300 { color: #444444 !important; }
 
-/* Inputs & textareas */
+/* ── Inputs & Textareas ──────────────────────────────────────────────────── */
 html.dark input,
 html.dark textarea,
 html.dark select {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-  border-color: #334155 !important;
+  background-color: #111111 !important;
+  color: #ffffff !important;
+  border-color: #2a2a2a !important;
 }
 html.dark input::placeholder,
 html.dark textarea::placeholder {
-  color: #475569 !important;
+  color: #555555 !important;
+}
+html.dark input:focus,
+html.dark textarea:focus {
+  border-color: #444444 !important;
+  outline: none;
 }
 
-/* Tables */
-html.dark table th { color: #64748b !important; }
-html.dark table td { color: #cbd5e1 !important; }
-html.dark tr:hover { background-color: #1e293b !important; }
-html.dark .divide-gray-50 > * + * { border-color: #1e293b !important; }
-html.dark .divide-y > * + *       { border-color: #334155 !important; }
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+/* Primary dark buttons — stay visible, slightly lighter */
+html.dark .bg-gray-900 { background-color: #1e1e1e !important; }
+html.dark .hover\:bg-gray-700:hover { background-color: #2a2a2a !important; }
 
-/* Shadows — soften in dark mode */
-html.dark .shadow-sm  { box-shadow: 0 1px 2px rgba(0,0,0,0.4) !important; }
-html.dark .shadow-2xl { box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important; }
+/* Disabled */
+html.dark .disabled\:bg-gray-200,
+html.dark .disabled\:bg-gray-100 {
+  background-color: #1a1a1a !important;
+  color: #444444 !important;
+}
 
-/* Dark bg buttons (submit, nav) — keep them as-is but lighten slightly */
+/* Outline / border buttons */
+html.dark .border-gray-300 { border-color: #333333 !important; }
+html.dark .hover\:border-gray-500:hover { border-color: #555555 !important; }
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+html.dark table thead tr { border-color: #222222 !important; }
+html.dark table th { color: #666666 !important; }
+html.dark table td { color: #d0d0d0 !important; }
+html.dark table tbody tr { border-color: #1a1a1a !important; }
+html.dark table tbody tr:hover { background-color: #111111 !important; }
+
+/* ── Dividers ────────────────────────────────────────────────────────────── */
+html.dark .divide-gray-50  > * + * { border-color: #1a1a1a !important; }
+html.dark .divide-gray-100 > * + * { border-color: #222222 !important; }
+html.dark .divide-y        > * + * { border-color: #2a2a2a !important; }
+
+/* ── Agent / actor badges ────────────────────────────────────────────────── */
+/* Orchestrator badge (dark bg in light mode — invert in dark) */
 html.dark .bg-gray-900.text-white {
-  background-color: #334155 !important;
-}
-html.dark .hover\:bg-gray-700:hover {
-  background-color: #475569 !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
 
-/* Disabled buttons */
-html.dark .disabled\:bg-gray-200 { background-color: #1e293b !important; }
+/* Agent A — blue */
+html.dark .bg-blue-100   { background-color: #0d1f3c !important; }
+html.dark .text-blue-800 { color: #93c5fd !important; }
+html.dark .text-blue-700 { color: #60a5fa !important; }
+html.dark .border-blue-200 { border-color: #1e3a5f !important; }
 
-/* Coloured agent badges — keep colours, just adjust slightly */
-html.dark .bg-blue-100    { background-color: #1e3a5f !important; }
-html.dark .text-blue-800  { color: #93c5fd !important; }
-html.dark .bg-emerald-100 { background-color: #064e3b !important; }
+/* Agent B — emerald */
+html.dark .bg-emerald-100   { background-color: #052e16 !important; }
 html.dark .text-emerald-800 { color: #6ee7b7 !important; }
-html.dark .bg-violet-100  { background-color: #3b0764 !important; }
+html.dark .text-emerald-700 { color: #34d399 !important; }
+html.dark .border-emerald-200 { border-color: #064e3b !important; }
+
+/* Agent C — violet */
+html.dark .bg-violet-100   { background-color: #1e0f3c !important; }
 html.dark .text-violet-800 { color: #c4b5fd !important; }
+html.dark .text-violet-700 { color: #a78bfa !important; }
+html.dark .border-violet-200 { border-color: #3b0764 !important; }
 
-/* Agent output card tints */
-html.dark .bg-blue-50    { background-color: #172554 !important; }
-html.dark .bg-emerald-50 { background-color: #022c22 !important; }
-html.dark .bg-violet-50  { background-color: #2e1065 !important; }
-html.dark .bg-amber-50   { background-color: #451a03 !important; }
+/* Light tinted bgs used in agent cards */
+html.dark .bg-blue-50    { background-color: #0a1628 !important; }
+html.dark .bg-emerald-50 { background-color: #021810 !important; }
+html.dark .bg-violet-50  { background-color: #120828 !important; }
+html.dark .bg-amber-50   { background-color: #1c0f00 !important; }
+html.dark .text-amber-600 { color: #fbbf24 !important; }
+html.dark .bg-blue-50.rounded-lg { background-color: #0a1628 !important; }
 
-/* Skeleton loaders */
-html.dark .animate-pulse .bg-gray-200 { background-color: #334155 !important; }
-html.dark .animate-pulse .bg-gray-100 { background-color: #1e293b !important; }
+/* ── Skeleton / pulse loaders ────────────────────────────────────────────── */
+html.dark .animate-pulse .bg-gray-200 { background-color: #222222 !important; }
+html.dark .animate-pulse .bg-gray-100 { background-color: #1a1a1a !important; }
+html.dark .bg-gray-200.rounded.animate-pulse { background-color: #222222 !important; }
 
-/* Modal overlay backdrop already uses rgba, no change needed */
-/* Modal body */
-html.dark .bg-white.rounded-xl { background-color: #1e293b !important; }
+/* ── Modals ──────────────────────────────────────────────────────────────── */
+html.dark .bg-white.rounded-xl,
+html.dark .bg-white.rounded-lg {
+  background-color: #111111 !important;
+}
+
+/* ── Hover states ────────────────────────────────────────────────────────── */
+html.dark .hover\:bg-gray-50:hover  { background-color: #111111 !important; }
+html.dark .hover\:bg-gray-100:hover { background-color: #1a1a1a !important; }
+
+/* ── Misc utility ────────────────────────────────────────────────────────── */
+html.dark .shadow-sm  { box-shadow: 0 1px 3px rgba(0,0,0,0.6) !important; }
+html.dark .shadow-2xl { box-shadow: 0 25px 50px rgba(0,0,0,0.8) !important; }
+html.dark .bg-gray-50.rounded-lg { background-color: #0a0a0a !important; }
+html.dark .font-mono  { color: inherit; }
