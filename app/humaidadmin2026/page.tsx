@@ -278,16 +278,15 @@ export default function AdminPage() {
   };
   const cursorFill  = dark ? "#2a2a2a" : "#f9fafb";
 
-  // Pie colours — always contrast-safe
-  const PIE_MODE   = dark ? ["#60a5fa", "#a78bfa"] : ["#111827", "#9ca3af"];
-  const PIE_ACCEPT = dark ? ["#34d399", "#f87171"] : ["#111827", "#d1d5db"];
+  // Chart colours — same in both modes
+  const PIE_MODE   = ["#60a5fa", "#a78bfa"];
+  const PIE_ACCEPT = ["#34d399", "#f87171"];
 
-  // Bar colours
-  const BAR_PRIMARY   = dark ? "#60a5fa" : "#111827";
-  const BAR_SECONDARY = dark ? "#a78bfa" : "#6b7280";
-  const BAR_SURVEY    = dark ? "#34d399" : "#374151";
-  const BAR_TOTAL     = dark ? "#94a3b8" : "#9ca3af";
-  const BAR_EDITED    = dark ? "#f87171" : "#111827";
+  const BAR_PRIMARY   = "#60a5fa";
+  const BAR_SECONDARY = "#a78bfa";
+  const BAR_SURVEY    = "#34d399";
+  const BAR_TOTAL     = "#94a3b8";
+  const BAR_EDITED    = "#f87171";
 
   const legendText = (value: string) => (
     <span style={{ fontSize: 11, color: dark ? "#cccccc" : "#6b7280" }}>{value}</span>
