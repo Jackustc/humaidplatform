@@ -95,6 +95,14 @@ html.dark .border-gray-300 { border-color: #666666 !important; }
 html.dark .hover\:border-gray-500:hover { border-color: #999999 !important; }
 html.dark .hover\:border-gray-400:hover { border-color: #888888 !important; }
 
+/* Export buttons — invert to white on hover in dark mode */
+html.dark a.hover\:bg-gray-900:hover,
+html.dark button.hover\:bg-gray-900:hover {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
+}
+
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 html.dark table thead tr { border-color: #555555 !important; }
 html.dark table th { color: #888888 !important; }

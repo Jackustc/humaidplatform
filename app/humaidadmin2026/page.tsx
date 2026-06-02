@@ -345,13 +345,13 @@ export default function AdminPage() {
           <div className="flex items-center gap-2">
             <a
               href="/api/export?format=xlsx"
-              className="flex-shrink-0 text-sm font-medium bg-gray-900 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors"
+              className="flex-shrink-0 text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-4 py-2 rounded-md transition-colors"
             >
               Export Excel
             </a>
             <a
               href="/api/export?format=json"
-              className="flex-shrink-0 text-sm font-medium border border-gray-300 hover:border-gray-500 text-gray-700 px-4 py-2 rounded-md transition-colors"
+              className="flex-shrink-0 text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-4 py-2 rounded-md transition-colors"
             >
               Export JSON
             </a>
