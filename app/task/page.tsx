@@ -25,9 +25,28 @@ export default function TaskPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">A research study on Human Multi-Agent AI Interaction Dynamics</p>
       </div>
 
-      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-8 bg-gray-50 dark:bg-gray-900">
+      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-4 bg-gray-50 dark:bg-gray-900">
         <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Your Task</p>
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{TASK.description}</p>
+      </div>
+
+      <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 mb-8 bg-white dark:bg-gray-900">
+        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">How It Works</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+          The Orchestrator coordinates the entire pipeline, including assigning tasks to different AI agents. The sample tasks for each agent are listed below — the Orchestrator can change these. You can also help the Orchestrator re-define the task for each AI agent.
+        </p>
+        <div className="space-y-1.5">
+          {[
+            { agent: "Agent A", task: "Identify and compile relevant keywords and search terms related to the topic" },
+            { agent: "Agent B", task: "Find credible industry sources and research papers using the provided keywords" },
+            { agent: "Agent C", task: "Synthesise the gathered sources into a structured, professional industrial report" },
+          ].map(({ agent, task }) => (
+            <div key={agent} className="flex gap-3 text-sm">
+              <span className="font-medium text-gray-700 dark:text-gray-300 w-16 flex-shrink-0">{agent}</span>
+              <span className="text-gray-500 dark:text-gray-400">{task}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
