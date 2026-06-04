@@ -599,15 +599,14 @@ export default function CollaborativePage() {
                   >
                     Use default feedback
                   </button>
-                  {disagreeText && (
-                    <button
-                      type="button"
-                      onClick={() => setDisagreeText("")}
-                      className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors"
-                    >
-                      Clear
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDisagreeText("")}
+                    disabled={!disagreeText}
+                    className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors"
+                  >
+                    Clear
+                  </button>
                 </div>
                 {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
                 <div style={{ textAlign: "center" }}>

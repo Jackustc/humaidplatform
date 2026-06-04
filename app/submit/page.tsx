@@ -9,31 +9,66 @@ function applyInline(text: string): string {
     .replace(/\*(.+?)\*/g, "<em>$1</em>");
 }
 
+function scholarUrl(ref: string): string {
+  return `https://scholar.google.com/scholar?q=${encodeURIComponent(ref)}`;
+}
+
 function renderMarkdown(md: string): string {
   const lines = md.split("\n");
   const result: string[] = [];
   let inList = false;
+  let inRefSection = false;
+  let inRefList = false;
+
   for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Detect "References" / "References:" heading
+    if (/^references?:?\s*$/i.test(trimmed)) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      if (inRefList) { result.push("</ol>"); inRefList = false; }
+      result.push(`<p style="font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin:20px 0 8px;border-top:1px solid #e5e7eb;padding-top:12px">References</p>`);
+      inRefSection = true;
+      continue;
+    }
+
     if (line.startsWith("### ")) {
       if (inList) { result.push("</ul>"); inList = false; }
+      if (inRefList) { result.push("</ol>"); inRefList = false; }
+      inRefSection = false;
       result.push(`<h3 style="font-size:13px;font-weight:600;color:#1f2937;margin:10px 0 4px">${applyInline(line.slice(4))}</h3>`);
     } else if (line.startsWith("## ")) {
       if (inList) { result.push("</ul>"); inList = false; }
+      if (inRefList) { result.push("</ol>"); inRefList = false; }
+      inRefSection = false;
       result.push(`<h2 style="font-size:14px;font-weight:700;color:#111827;margin:12px 0 4px">${applyInline(line.slice(3))}</h2>`);
     } else if (line.startsWith("# ")) {
       if (inList) { result.push("</ul>"); inList = false; }
+      if (inRefList) { result.push("</ol>"); inRefList = false; }
+      inRefSection = false;
       result.push(`<h1 style="font-size:15px;font-weight:700;color:#111827;margin:12px 0 6px">${applyInline(line.slice(2))}</h1>`);
+    } else if (trimmed === "") {
+      if (inList) { result.push("</ul>"); inList = false; }
+      // Don't close ref list on blank lines — references may have blank lines between them
+    } else if (inRefSection) {
+      // Render as numbered list item with Scholar link
+      if (!inRefList) {
+        result.push('<ol style="margin:0;padding-left:20px;list-style-type:decimal">');
+        inRefList = true;
+      }
+      const clean = trimmed.replace(/^\d+\.\s*/, ""); // strip any "1." the model added
+      const link = `<a href="${scholarUrl(clean)}" target="_blank" rel="noopener noreferrer" style="color:#3b82f6;text-decoration:underline;font-size:11px;margin-left:6px">Search on Scholar ↗</a>`;
+      result.push(`<li style="font-size:12px;color:#4b5563;line-height:1.8;margin:5px 0;padding-left:4px">${applyInline(clean)}${link}</li>`);
     } else if (/^[-*] /.test(line)) {
       if (!inList) { result.push('<ul style="margin:4px 0;padding-left:16px">'); inList = true; }
       result.push(`<li style="font-size:13px;color:#374151;line-height:1.6;margin:2px 0">${applyInline(line.slice(2))}</li>`);
-    } else if (line.trim() === "") {
-      if (inList) { result.push("</ul>"); inList = false; }
     } else {
       if (inList) { result.push("</ul>"); inList = false; }
       result.push(`<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 8px">${applyInline(line)}</p>`);
     }
   }
   if (inList) result.push("</ul>");
+  if (inRefList) result.push("</ol>");
   return result.join("");
 }
 
