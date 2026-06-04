@@ -39,16 +39,12 @@ const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text:
   agent_c:     { label: "Agent C",     bg: "bg-violet-100",  text: "text-violet-800" },
 };
 
-const TYPE_PREFIX: Record<LogEntry["type"], string> = {
-  plan:       "📋 Plan",
-  assignment: "→ Brief",
-  output:     "✓ Output",
-  critique:   "💬 Critique",
-  decision:   "⚖️ Decision",
-  final:      "✅ Rationale",
-};
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
+
+function scholarUrl(ref: string): string {
+  return `https://scholar.google.com/scholar?q=${encodeURIComponent(ref)}`;
+}
 
 function applyInline(text: string): string {
   return text
@@ -60,12 +56,32 @@ function renderMarkdown(md: string): string {
   const lines = md.split("\n");
   const result: string[] = [];
   let inList = false;
+  let inRefSection = false;
+  let inRefList = false;
   for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^references?:?\s*$/i.test(trimmed)) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      if (inRefList) { result.push("</ol>"); inRefList = false; }
+      result.push(`<p style="font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin:16px 0 8px;border-top:1px solid #e5e7eb;padding-top:12px">References</p>`);
+      inRefSection = true;
+      continue;
+    }
+    if (inRefSection && trimmed !== "") {
+      if (!inRefList) { result.push('<ol style="margin:0;padding-left:20px;list-style-type:decimal">'); inRefList = true; }
+      const clean = trimmed.replace(/^\d+\.\s*/, "");
+      const link = `<a href="${scholarUrl(clean)}" target="_blank" rel="noopener noreferrer" style="color:#3b82f6;font-size:11px;margin-left:6px;text-decoration:underline">Link</a>`;
+      result.push(`<li style="font-size:12px;color:#4b5563;line-height:1.8;margin:5px 0;padding-left:4px">${applyInline(clean)}${link}</li>`);
+      continue;
+    }
+    if (trimmed === "") { inRefSection = false; }
     if (line.startsWith("### ")) {
       if (inList) { result.push("</ul>"); inList = false; }
+      if (inRefList) { result.push("</ol>"); inRefList = false; }
       result.push(`<h3 style="font-size:12px;font-weight:600;color:#1f2937;margin:10px 0 4px">${applyInline(line.slice(4))}</h3>`);
     } else if (line.startsWith("## ")) {
       if (inList) { result.push("</ul>"); inList = false; }
+      if (inRefList) { result.push("</ol>"); inRefList = false; }
       result.push(`<h2 style="font-size:13px;font-weight:700;color:#111827;margin:12px 0 4px">${applyInline(line.slice(3))}</h2>`);
     } else if (line.startsWith("# ")) {
       if (inList) { result.push("</ul>"); inList = false; }
@@ -81,6 +97,7 @@ function renderMarkdown(md: string): string {
     }
   }
   if (inList) result.push("</ul>");
+  if (inRefList) result.push("</ol>");
   return result.join("");
 }
 
@@ -138,16 +155,12 @@ function useTimer() {
 
 function LogBubble({ entry }: { entry: LogEntry }) {
   const cfg = ACTOR_CONFIG[entry.actor];
-  const prefix = TYPE_PREFIX[entry.type];
   return (
     <div className="flex gap-3 py-2.5 border-b border-gray-50 last:border-0">
       <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 h-fit mt-0.5 ${cfg.bg} ${cfg.text}`}>
         {cfg.label}
       </span>
-      <div>
-        <span className="text-xs font-medium text-gray-400 mr-1.5">{prefix}</span>
-        <span className="text-xs text-gray-600 leading-relaxed">{entry.content}</span>
-      </div>
+      <span className="text-xs text-gray-600 leading-relaxed">{entry.content}</span>
     </div>
   );
 }
@@ -475,15 +488,15 @@ export default function CompetitivePage() {
 
       {/* Running phase */}
       {phase === "running" && (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-gray-900 rounded-full animate-pulse" />
-              <p className="text-sm font-medium text-gray-700">Orchestrator is running the competition…</p>
-            </div>
-            <p className="text-xs text-gray-400 mt-0.5">Agents are generating outputs, critiquing each other, and the Orchestrator is deciding the winner.</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-5">
+          <svg className="w-10 h-10 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <div style={{ textAlign: "center" }}>
+            <p className="text-sm font-medium text-gray-700">Orchestrator is running the competition…</p>
+            <p className="text-xs text-gray-400 mt-1">Agents are generating outputs, criticizing each other, and the Orchestrator is deciding the winner.</p>
           </div>
-          <div className="p-5"><LogSkeleton /></div>
         </div>
       )}
 
@@ -644,8 +657,25 @@ export default function CompetitivePage() {
                   onChange={(e) => setDisagreeText(e.target.value)}
                   placeholder="e.g. The output is too generic. I need more specific data and industry examples from the last 2 years..."
                   rows={3}
-                  className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors mb-3"
+                  className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors mb-2"
                 />
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setDisagreeText("The output is too generic. I need more specific data and industry examples from the last 2 years.")}
+                    className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors"
+                  >
+                    Use default feedback
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDisagreeText("")}
+                    disabled={!disagreeText}
+                    className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
                 {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
                 <div style={{ textAlign: "center" }}>
                   <button
