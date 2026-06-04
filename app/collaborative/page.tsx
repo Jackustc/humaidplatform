@@ -294,7 +294,7 @@ export default function CollaborativePage() {
             <textarea
               value={userTask}
               onChange={(e) => setUserTask(e.target.value)}
-              placeholder="e.g. Write an industry report on the impact of Generative AI on the manufacturing sector"
+              placeholder="e.g., Write an industry report on the impact of Generative AI on the manufacturing sector"
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
@@ -375,14 +375,14 @@ export default function CollaborativePage() {
                   <textarea
                     value={agentAInstruction}
                     onChange={(e) => setAgentAInstruction(e.target.value)}
-                    placeholder="e.g. Focus on data collection from recent 2023–2024 sources"
+                    placeholder="e.g. Focus on data collection from recent 2025–2026 sources"
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
                   <div className="mt-2 flex items-center justify-between">
                     <button
                       type="button"
-                      onClick={() => setAgentAInstruction("Focus on data collection from recent 2023–2024 sources")}
+                      onClick={() => setAgentAInstruction("Focus on data collection from recent 2025–2026 sources")}
                       className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors"
                     >
                       Use default
