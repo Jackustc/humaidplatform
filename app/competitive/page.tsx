@@ -429,6 +429,10 @@ export default function CompetitivePage() {
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
+                  <div className="mt-2 flex items-center justify-between">
+                    <button type="button" onClick={() => setAgentAInstruction("Focus on data collection from recent 2023–2024 sources")} className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors">Use default</button>
+                    <button type="button" onClick={() => setAgentAInstruction("")} disabled={!agentAInstruction} className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors">Clear</button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent B — Style</label>
@@ -439,6 +443,10 @@ export default function CompetitivePage() {
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
+                  <div className="mt-2 flex items-center justify-between">
+                    <button type="button" onClick={() => setAgentBInstruction("Include statistical trends and market size data")} className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors">Use default</button>
+                    <button type="button" onClick={() => setAgentBInstruction("")} disabled={!agentBInstruction} className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors">Clear</button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">Agent C — Style</label>
@@ -449,6 +457,10 @@ export default function CompetitivePage() {
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
+                  <div className="mt-2 flex items-center justify-between">
+                    <button type="button" onClick={() => setAgentCInstruction("Write in an executive summary style, 300 words max")} className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors">Use default</button>
+                    <button type="button" onClick={() => setAgentCInstruction("")} disabled={!agentCInstruction} className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors">Clear</button>
+                  </div>
                 </div>
               </div>
             )}
