@@ -47,6 +47,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body", code: "INVALID_BODY" }, { status: 400 });
   }
   const { topic, userMessage, previousSummary, round = 1 } = body;
+
+  if (!topic || !topic.trim()) {
+    return NextResponse.json({ error: "Topic is required", code: "MISSING_TOPIC" }, { status: 400 });
+  }
+
   const logs: LogEntry[] = [];
   const isReRun = round > 1 && previousSummary;
 
@@ -59,10 +64,10 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are the Main Orchestrator coordinating three specialist agents to produce an industrial report:
-• Agent A — Keyword Specialist
-• Agent B — Source Specialist
-• Agent C — Report Writer
+          content: `You are the Main Orchestrator coordinating three AI agents (Agent A, Agent B, Agent C) to produce an industrial report.
+Your job is to divide the work intelligently across the three agents.
+IMPORTANT: If the user has assigned specific instructions or roles to any agent, you MUST follow those exactly — do not override or change them.
+If no specific roles are assigned, decide the best division of work yourself (e.g. research, analysis, writing — in any order across the agents).
 Plan the work, brief each agent, and review their outputs. Be concise and professional.
 Return JSON: { "plan": string, "agentABrief": string }`,
         },
@@ -70,11 +75,16 @@ Return JSON: { "plan": string, "agentABrief": string }`,
           role: "user",
           content: isReRun
             ? `Round ${round}. Previous report:\n${previousSummary}\n\nUser feedback: "${userMessage}"\n\nCreate a revised plan addressing this feedback. Return JSON.`
-            : `Task: Industrial report on "${topic}".\nUser requirements: "${userMessage || "No specific requirements."}"\n\nCreate a plan and brief Agent A. Return JSON.`,
+            : `Task: Industrial report on "${topic}".\nUser requirements: "${userMessage || "No specific requirements."}"\n\nIf the requirements above include specific instructions for Agent A, Agent B, or Agent C, you MUST assign exactly those tasks to those agents. Otherwise assign tasks as you see fit.\nCreate a plan and brief Agent A. Return JSON.`,
         },
       ],
     });
-    const plan = JSON.parse(planRes.choices[0].message.content ?? "{}");
+    let plan: Record<string, string> = {};
+    try {
+      plan = JSON.parse(planRes.choices[0].message.content ?? "{}");
+    } catch {
+      plan = {};
+    }
     logs.push(log("orchestrator", "plan", plan.plan ?? "Analysing task and dividing work across the agent pipeline."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent A — ${plan.agentABrief ?? "Generate search keywords for the report topic."}`));
 
@@ -97,11 +107,16 @@ Return JSON: { "plan": string, "agentABrief": string }`,
       temperature: 0.5,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are the Main Orchestrator. Review Agent A's keywords, then brief Agent B (Source Specialist). Return JSON: { \"review\": string, \"agentBBrief\": string }" },
-        { role: "user", content: `Agent A returned: ${keywords.join(", ")}.\nBrief Agent B to find 5–7 relevant industry sources.${userMessage ? `\nUser context: ${userMessage}` : ""}` },
+        { role: "system", content: "You are the Main Orchestrator. Review Agent A's output, then brief Agent B on its task. IMPORTANT: if the user specified a role for Agent B, use that exactly. Return JSON: { \"review\": string, \"agentBBrief\": string }" },
+        { role: "user", content: `Agent A returned: ${keywords.join(", ")}.\nBrief Agent B on its task.${userMessage ? `\nUser context (follow any Agent B instructions exactly): ${userMessage}` : ""}` },
       ],
     });
-    const reviewA = JSON.parse(reviewARes.choices[0].message.content ?? "{}");
+    let reviewA: Record<string, string> = {};
+    try {
+      reviewA = JSON.parse(reviewARes.choices[0].message.content ?? "{}");
+    } catch {
+      reviewA = {};
+    }
     logs.push(log("orchestrator", "review", reviewA.review ?? "Keywords reviewed — coverage looks solid. Passing to Agent B."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent B — ${reviewA.agentBBrief ?? "Find relevant industry sources using the provided keywords."}`));
 
@@ -133,11 +148,16 @@ Format: { "papers": [{ "title": string, "authors": string, "year": number, "jour
       temperature: 0.5,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are the Main Orchestrator. Review Agent B's sources, then brief Agent C (Report Writer). Return JSON: { \"review\": string, \"agentCBrief\": string }" },
-        { role: "user", content: `Agent B retrieved ${papers.length} sources. Top: ${papers.slice(0, 3).map(p => `"${p.title}" (${p.year})`).join(", ")}.\nBrief Agent C.${userMessage ? `\nUser requirements: ${userMessage}` : ""}${isReRun ? `\nThis is a revision — user feedback: "${userMessage}"` : ""}` },
+        { role: "system", content: "You are the Main Orchestrator. Review Agent B's output, then brief Agent C on its task. IMPORTANT: if the user specified a role for Agent C, use that exactly. Return JSON: { \"review\": string, \"agentCBrief\": string }" },
+        { role: "user", content: `Agent B retrieved ${papers.length} sources. Top: ${papers.slice(0, 3).map(p => `"${p.title}" (${p.year})`).join(", ")}.\nBrief Agent C on its task.${userMessage ? `\nUser context (follow any Agent C instructions exactly): ${userMessage}` : ""}${isReRun ? `\nThis is a revision — user feedback: "${userMessage}"` : ""}` },
       ],
     });
-    const reviewB = JSON.parse(reviewBRes.choices[0].message.content ?? "{}");
+    let reviewB: Record<string, string> = {};
+    try {
+      reviewB = JSON.parse(reviewBRes.choices[0].message.content ?? "{}");
+    } catch {
+      reviewB = {};
+    }
     logs.push(log("orchestrator", "review", reviewB.review ?? "Sources reviewed — good coverage and relevance. Passing to Agent C."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent C — ${reviewB.agentCBrief ?? "Synthesise the sources into a professional industrial report."}`));
 

@@ -16,7 +16,7 @@ const openaiClient = new OpenAI({
 export type LogEntry = {
   id: string;
   timestamp: string;
-  actor: "coordinator" | "agent_a" | "agent_b" | "agent_c";
+  actor: "orchestrator" | "agent_a" | "agent_b" | "agent_c";
   type: "plan" | "assignment" | "output" | "critique" | "decision" | "final";
   content: string;
 };
@@ -40,6 +40,11 @@ export async function POST(req: NextRequest) {
   }
 
   const { topic, userMessage, previousFinal, round = 1 } = body;
+
+  if (!topic || !topic.trim()) {
+    return NextResponse.json({ error: "Topic is required", code: "MISSING_TOPIC" }, { status: 400 });
+  }
+
   const logs: LogEntry[] = [];
   const isReRun = round > 1 && previousFinal;
 
@@ -51,8 +56,8 @@ export async function POST(req: NextRequest) {
           ? `\n\nAdditional requirements: ${userMessage}`
           : ""}`;
 
-    logs.push(log("coordinator", "plan", `Launching competitive pipeline for: "${topic}".`));
-    logs.push(log("coordinator", "assignment", `Briefing all agents: ${brief.slice(0, 120)}${brief.length > 120 ? "…" : ""}`));
+    logs.push(log("orchestrator", "plan", `Launching competitive pipeline for: "${topic}".`));
+    logs.push(log("orchestrator", "assignment", `Briefing all agents: ${brief.slice(0, 120)}${brief.length > 120 ? "…" : ""}`));
 
     // ── STEP 1: All three agents generate in parallel (with retry) ────────────
     const reportInstruction = `Write a professional industry report, 200 words max, with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers). Write in plain prose paragraphs. End with a "References" section listing each cited source in APA format on a separate line. Return ONLY the report text followed by the References section.`;
@@ -79,7 +84,7 @@ export async function POST(req: NextRequest) {
     logs.push(log("agent_c", "output", `Draft complete (${outputC.split(/\s+/).length} words).`));
 
     // ── STEP 2: Critique round (parallel, with retry) ─────────────────────────
-    logs.push(log("coordinator", "assignment", "Starting critique round — each agent evaluates the other two outputs."));
+    logs.push(log("orchestrator", "assignment", "Starting critique round — each agent evaluates the other two outputs."));
 
     const critiqueSystem = `You are a professional peer reviewer. Write a concise, objective critique.
 Use plain prose only — no markdown, no bold, no headers, no bullet points.
@@ -137,9 +142,18 @@ Format: One short paragraph on the first report, then one short paragraph on the
       })
     );
 
-    const decision = JSON.parse(decisionRes.choices[0].message.content ?? "{}");
-    logs.push(log("coordinator", "decision", decision.decision ?? "Decision made based on agent outputs and critiques."));
-    logs.push(log("coordinator", "final", decision.rationale ?? "Final version selected and ready for review."));
+    let decision: Record<string, string> = {};
+    try {
+      decision = JSON.parse(decisionRes.choices[0].message.content ?? "{}");
+    } catch {
+      decision = {};
+    }
+    // Validate finalVersion — fall back to first non-empty agent output
+    if (!decision.finalVersion || !decision.finalVersion.trim()) {
+      decision.finalVersion = [outputA, outputB, outputC].find(o => o && o.trim()) ?? outputA;
+    }
+    logs.push(log("orchestrator", "decision", decision.decision ?? "Decision made based on agent outputs and critiques."));
+    logs.push(log("orchestrator", "final", decision.rationale ?? "Final version selected and ready for review."));
 
     return NextResponse.json({
       success: true,
@@ -149,7 +163,7 @@ Format: One short paragraph on the first report, then one short paragraph on the
         { id: 2, name: "Agent B", style: "Agent B's Response", output: outputB, critique: critiqueB },
         { id: 3, name: "Agent C", style: "Agent C's Response", output: outputC, critique: critiqueC },
       ],
-      finalVersion: decision.finalVersion ?? outputA,
+      finalVersion: decision.finalVersion,
       coordinatorDecision: decision.decision ?? "",
       coordinatorRationale: decision.rationale ?? "",
       round,

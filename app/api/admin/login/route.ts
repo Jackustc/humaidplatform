@@ -21,9 +21,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (password !== adminPassword) {
+    console.warn("[admin] Login attempt", { success: false, timestamp: new Date().toISOString() });
     return NextResponse.json({ error: "Incorrect password", code: "UNAUTHORIZED" }, { status: 401 });
   }
 
+  console.warn("[admin] Login attempt", { success: true, timestamp: new Date().toISOString() });
   const res = NextResponse.json({ success: true });
   res.cookies.set("humaid_admin_token", adminSecret, {
     httpOnly: true,

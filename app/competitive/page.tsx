@@ -9,7 +9,7 @@ import { computeProvenance, summariseProvenance } from "@/lib/provenance";
 type LogEntry = {
   id: string;
   timestamp: string;
-  actor: "coordinator" | "agent_a" | "agent_b" | "agent_c";
+  actor: "orchestrator" | "agent_a" | "agent_b" | "agent_c";
   type: "plan" | "assignment" | "output" | "critique" | "decision" | "final";
   content: string;
 };
@@ -33,10 +33,10 @@ type Round = {
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
-  coordinator: { label: "Orchestrator", bg: "bg-gray-900",    text: "text-white" },
-  agent_a:     { label: "Agent A",     bg: "bg-blue-100",    text: "text-blue-800" },
-  agent_b:     { label: "Agent B",     bg: "bg-emerald-100", text: "text-emerald-800" },
-  agent_c:     { label: "Agent C",     bg: "bg-violet-100",  text: "text-violet-800" },
+  orchestrator: { label: "Orchestrator", bg: "bg-gray-900",    text: "text-white" },
+  agent_a:      { label: "Agent A",     bg: "bg-blue-100",    text: "text-blue-800" },
+  agent_b:      { label: "Agent B",     bg: "bg-emerald-100", text: "text-emerald-800" },
+  agent_c:      { label: "Agent C",     bg: "bg-violet-100",  text: "text-violet-800" },
 };
 
 
@@ -302,15 +302,24 @@ export default function CompetitivePage() {
     logEvent("agent_selected", { agentId: agent.id, agentName: agent.name, agentStyle: agent.style });
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     submittingRef.current = true;
-    const provenanceSources = currentRound?.agentOutputs.map((a) => ({
+    const agentOutputSources = currentRound?.agentOutputs.map((a) => ({
       id: `agent_${a.name.replace(/\s+/g, "_")}`,
       text: a.output,
     })) ?? [];
+    const coordinatorSources = currentRound ? [
+      { id: "coordinator_rationale", text: currentRound.coordinatorRationale },
+      { id: "coordinator_decision", text: currentRound.coordinatorDecision },
+    ] : [];
+    const provenanceSources = [...agentOutputSources, ...coordinatorSources];
     const provenanceSpans = computeProvenance(finalText, provenanceSources);
     const provenanceSummary = summariseProvenance(provenanceSpans);
     logEvent("session_end", { provenanceSummary, totalRounds: rounds.length });
+
+    const selectedAgentName = selectedAgentId !== null
+      ? (currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name ?? null)
+      : null;
 
     const sessionData = {
       sessionId: sessionStorage.getItem("humaid_session_id"),
@@ -320,7 +329,8 @@ export default function CompetitivePage() {
       endTime: new Date().toISOString(),
       totalRounds: rounds.length,
       coordinatorDecision: currentRound?.coordinatorDecision,
-      selectedAgent: selectedAgentId !== null ? currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name : "coordinator",
+      selectedAgent: selectedAgentId,
+      selectedAgentName,
       finalSubmission: finalText,
       wasEdited: finalText !== originalFinal,
       originalLength: originalFinal.length,
@@ -333,6 +343,7 @@ export default function CompetitivePage() {
       events: getEvents(),
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
+    await new Promise(r => setTimeout(r, 50));
     router.push("/submit");
   }
 

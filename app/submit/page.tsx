@@ -180,8 +180,9 @@ export default function SubmitPage() {
           demographics: demographics ? JSON.parse(demographics) : null,
         }),
       });
-    } catch {
+    } catch (err) {
       // Non-critical
+      console.error("[submit] Failed to log session:", err);
     }
     setIsSubmitting(false);
     setSubmitted(true);

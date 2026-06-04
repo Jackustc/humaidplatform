@@ -228,7 +228,7 @@ export default function CollaborativePage() {
     }, 1500);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     submittingRef.current = true;
     const provenanceSources = [
       { id: "agent_c_summary", text: originalSummary },
@@ -257,6 +257,7 @@ export default function CollaborativePage() {
       events: getEvents(),
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
+    await new Promise(r => setTimeout(r, 50));
     router.push("/submit");
   }
 
@@ -279,21 +280,9 @@ export default function CollaborativePage() {
       {/* How it works */}
       <div className="border border-gray-200 rounded-lg p-5 mb-6 bg-gray-50">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">How It Works</p>
-        <p className="text-sm text-gray-600 leading-relaxed mb-3">
-          The Orchestrator coordinates the entire pipeline, including assigning tasks to different AI agents. The sample tasks for each agent are listed below — the Orchestrator can change these. You can also help the Orchestrator re-define the task for each AI agent.
+        <p className="text-sm text-gray-600 leading-relaxed">
+          The Orchestrator coordinates the entire pipeline and dynamically assigns a different role to each AI agent based on your prompt. The roles are not fixed — the Orchestrator decides how to best divide the work. You can also assign specific roles to each agent yourself before starting, in which case the Orchestrator will follow your instructions instead.
         </p>
-        <div className="space-y-1.5">
-          {[
-            { agent: "Agent A", task: "Identify and compile relevant keywords and search terms related to the topic" },
-            { agent: "Agent B", task: "Find credible industry sources and research papers using the provided keywords" },
-            { agent: "Agent C", task: "Synthesise the gathered sources into a structured, professional industrial report" },
-          ].map(({ agent, task }) => (
-            <div key={agent} className="flex gap-3 text-sm">
-              <span className="font-medium text-gray-700 w-16 flex-shrink-0">{agent}</span>
-              <span className="text-gray-500">{task}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Brief phase */}
