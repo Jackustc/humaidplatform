@@ -41,6 +41,23 @@ const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text:
 
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
 
+/** Split report text into body and references array */
+function parseReport(text: string): { body: string; references: string[] } {
+  const refMatch = text.match(/\n\s*references?\s*\n/i);
+  if (!refMatch || refMatch.index === undefined) return { body: text, references: [] };
+  const body = text.slice(0, refMatch.index).trim();
+  const refBlock = text.slice(refMatch.index + refMatch[0].length).trim();
+  const references = refBlock
+    .split("\n")
+    .map((l) => l.replace(/^\s*[-•*]\s*/, "").trim())
+    .filter(Boolean);
+  return { body, references };
+}
+
+function scholarUrl(ref: string): string {
+  return `https://scholar.google.com/scholar?q=${encodeURIComponent(ref)}`;
+}
+
 // Tracks how far the user has scrolled through a panel (25/50/75/100% milestones).
 // Returns a callback ref — pass it directly to a div's `ref` prop.
 function useScrollDepth(label: string) {
@@ -437,18 +454,15 @@ export default function CollaborativePage() {
 
       {/* Running phase */}
       {phase === "running" && (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-gray-700 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-              </svg>
-              <p className="text-sm font-medium text-gray-700">Orchestrator is coordinating the pipeline…</p>
-            </div>
-            <p className="text-xs text-gray-400 mt-0.5">Each agent is being briefed and reviewed. This may take up to 30 seconds.</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-5">
+          <svg className="w-10 h-10 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <div style={{ textAlign: "center" }}>
+            <p className="text-sm font-medium text-gray-700">Orchestrator is coordinating the pipeline…</p>
+            <p className="text-xs text-gray-400 mt-1">Each agent is being briefed and reviewed. This may take up to 30 seconds.</p>
           </div>
-          <div className="p-5"><LogSkeleton /></div>
         </div>
       )}
 
@@ -491,29 +505,66 @@ export default function CollaborativePage() {
           </div>
 
           {/* Final output */}
-          <div ref={reportPanelRef} className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-            <div className="px-5 py-4 border-b border-gray-100">
-              <p className="font-medium text-gray-900 text-sm">Your Report</p>
-              <p className="text-xs text-gray-400 mt-0.5">Produced by Agent C and reviewed by the Orchestrator. Edit before submitting.</p>
-            </div>
-            <div className="p-5">
-              <textarea
-                value={finalText}
-                onChange={(e) => handleTextareaChange(e.target.value)}
-                rows={13}
-                className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
-              />
-              <p className="text-xs text-gray-400 mt-1.5">
-                {finalText !== originalSummary ? "Modified from original — " : ""}
-                {wordCount(finalText)} words
-              </p>
-            </div>
-            <div className="px-5 pb-5 flex justify-center">
-              <button onClick={handleSubmit} className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors">
-                Submit final answer
-              </button>
-            </div>
-          </div>
+          {(() => {
+            const { body, references } = parseReport(finalText);
+            return (
+              <div ref={reportPanelRef} className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <p className="font-medium text-gray-900 text-sm">Your Report</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Produced by Agent C and reviewed by the Orchestrator. Edit before submitting.</p>
+                </div>
+                <div className="p-5">
+                  <textarea
+                    value={body}
+                    onChange={(e) => handleTextareaChange(
+                      references.length
+                        ? `${e.target.value}\n\nReferences\n${references.join("\n")}`
+                        : e.target.value
+                    )}
+                    rows={13}
+                    className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    {finalText !== originalSummary ? "Modified from original — " : ""}
+                    {wordCount(finalText)} words
+                  </p>
+                </div>
+
+                {references.length > 0 && (
+                  <div className="px-5 pb-5 border-t border-gray-100 pt-4">
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">References</p>
+                    <ol className="space-y-2">
+                      {references.map((ref, i) => (
+                        <li key={i} className="flex gap-2 text-xs text-gray-600 leading-relaxed">
+                          <span className="text-gray-300 flex-shrink-0 font-mono">{i + 1}.</span>
+                          <span>
+                            {ref}{" "}
+                            <a
+                              href={scholarUrl(ref)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-0.5 text-blue-500 hover:text-blue-700 underline underline-offset-2 transition-colors"
+                            >
+                              Search on Scholar
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                <div className="px-5 pb-5 flex justify-center">
+                  <button onClick={handleSubmit} className="bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors">
+                    Submit final answer
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Disagree section */}
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
