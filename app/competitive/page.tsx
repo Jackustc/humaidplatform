@@ -336,7 +336,7 @@ export default function CompetitivePage() {
 
       <div className="mb-8" style={{ textAlign: "center" }}>
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Competitive Mode</h1>
-        <p className="text-sm text-gray-500">The Orchestrator runs Agent A, B, and C in parallel, has them critique each other, then decides the best output. You see the full conversation.</p>
+        <p className="text-sm text-gray-500">The Orchestrator runs Agent A, B, and C in parallel, has them criticize each other, then decides the best output. You see the full conversation.</p>
       </div>
 
       {/* Brief phase */}
@@ -352,12 +352,27 @@ export default function CompetitivePage() {
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
+            <div className="mt-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setUserTask("Write an industry report on the impact of Generative AI on the manufacturing sector")}
+                className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors"
+              >
+                Use default task
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserTask("")}
+                disabled={!userTask}
+                className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors"
+              >
+                Clear
+              </button>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Preferences &amp; Requirements <span style={{ fontWeight: 400, color: "#9ca3af" }}>(optional)</span>
-            </label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Preferences &amp; Requirements</label>
             <p className="text-xs text-gray-400 mb-2">Specify any constraints, tone, audience, or focus areas for the Orchestrator.</p>
             <textarea
               value={preferences}
@@ -366,6 +381,23 @@ export default function CompetitivePage() {
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
+            <div className="mt-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setPreferences("Focus on cost implications, keep the tone practical, target audience is senior managers")}
+                className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors"
+              >
+                Use default preferences
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreferences("")}
+                disabled={!preferences}
+                className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors"
+              >
+                Clear
+              </button>
+            </div>
           </div>
 
           <div>
