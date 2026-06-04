@@ -57,7 +57,7 @@ function renderMarkdown(md: string): string {
         inRefList = true;
       }
       const clean = trimmed.replace(/^\d+\.\s*/, ""); // strip any "1." the model added
-      const link = `<a href="${scholarUrl(clean)}" target="_blank" rel="noopener noreferrer" title="Search on Google Scholar" style="color:#9ca3af;font-size:11px;margin-left:4px;text-decoration:none;vertical-align:middle">↗</a>`;
+      const link = `<a href="${scholarUrl(clean)}" target="_blank" rel="noopener noreferrer" style="color:#3b82f6;font-size:11px;margin-left:6px;text-decoration:underline">Link</a>`;
       result.push(`<li style="font-size:12px;color:#4b5563;line-height:1.8;margin:5px 0;padding-left:4px">${applyInline(clean)}${link}</li>`);
     } else if (/^[-*] /.test(line)) {
       if (!inList) { result.push('<ul style="margin:4px 0;padding-left:16px">'); inList = true; }
@@ -202,18 +202,18 @@ export default function SubmitPage() {
       : null;
 
     return (
-      <div className="max-w-3xl mx-auto py-16">
-        <div className="mb-8 text-center" style={{ textAlign: "center" }}>
-          <div className="w-10 h-10 border-2 border-gray-900 rounded-full flex items-center justify-center mb-5 mx-auto">
-            <svg className="w-5 h-5 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="max-w-sm mx-auto py-10">
+        <div className="mb-5 text-center" style={{ textAlign: "center" }}>
+          <div className="w-9 h-9 border-2 border-gray-900 rounded-full flex items-center justify-center mb-4 mx-auto">
+            <svg className="w-4 h-4 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Submission recorded</h1>
+          <h1 className="text-lg font-semibold text-gray-900 mb-1">Submission recorded</h1>
           <p className="text-sm text-gray-500">Thank you for participating in this study.</p>
         </div>
 
-        <div className="border border-gray-200 rounded-lg p-5 text-sm space-y-2 mb-8">
+        <div className="border border-gray-200 rounded-lg p-4 text-sm space-y-1.5 mb-5">
           <div className="flex justify-between">
             <span className="text-gray-400 text-xs">Mode</span>
             <span className="text-xs font-medium capitalize">{data.mode}</span>

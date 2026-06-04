@@ -331,7 +331,7 @@ export default function CollaborativePage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
-              Preferences &amp; Requirements <span style={{ fontWeight: 400, color: "#9ca3af" }}>(optional)</span>
+              Preferences &amp; Requirements
             </label>
             <p className="text-xs text-gray-400 mb-2">Specify any constraints, tone, audience, or focus areas for the Orchestrator.</p>
             <textarea
@@ -549,10 +549,9 @@ export default function CollaborativePage() {
                               href={scholarUrl(ref)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              title="Search on Google Scholar"
-                              className="text-gray-400 hover:text-gray-600 transition-colors ml-1 text-xs no-underline"
+                              className="text-blue-500 hover:text-blue-700 underline underline-offset-2 transition-colors ml-1.5 text-xs"
                             >
-                              ↗
+                              Link
                             </a>
                           </span>
                         </li>
