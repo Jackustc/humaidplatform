@@ -57,7 +57,7 @@ function renderMarkdown(md: string): string {
         inRefList = true;
       }
       const clean = trimmed.replace(/^\d+\.\s*/, ""); // strip any "1." the model added
-      const link = `<a href="${scholarUrl(clean)}" target="_blank" rel="noopener noreferrer" style="color:#3b82f6;text-decoration:underline;font-size:11px;margin-left:6px">Search on Scholar ↗</a>`;
+      const link = `<a href="${scholarUrl(clean)}" target="_blank" rel="noopener noreferrer" title="Search on Google Scholar" style="color:#9ca3af;font-size:11px;margin-left:4px;text-decoration:none;vertical-align:middle">↗</a>`;
       result.push(`<li style="font-size:12px;color:#4b5563;line-height:1.8;margin:5px 0;padding-left:4px">${applyInline(clean)}${link}</li>`);
     } else if (/^[-*] /.test(line)) {
       if (!inList) { result.push('<ul style="margin:4px 0;padding-left:16px">'); inList = true; }
