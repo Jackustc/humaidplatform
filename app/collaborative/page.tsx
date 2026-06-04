@@ -298,7 +298,7 @@ export default function CollaborativePage() {
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setUserTask("Write an industry report on the impact of Generative AI on the manufacturing sector")}
@@ -310,7 +310,7 @@ export default function CollaborativePage() {
                 <button
                   type="button"
                   onClick={() => setUserTask("")}
-                  className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors"
+                  className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors"
                 >
                   Clear
                 </button>
@@ -330,7 +330,7 @@ export default function CollaborativePage() {
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setPreferences("Focus on cost implications, keep the tone practical, target audience is senior managers")}
@@ -342,7 +342,7 @@ export default function CollaborativePage() {
                 <button
                   type="button"
                   onClick={() => setPreferences("")}
-                  className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors"
+                  className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors"
                 >
                   Clear
                 </button>
@@ -379,7 +379,7 @@ export default function CollaborativePage() {
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => setAgentAInstruction("Focus on data collection from recent 2023–2024 sources")}
@@ -388,7 +388,7 @@ export default function CollaborativePage() {
                       Use default
                     </button>
                     {agentAInstruction && (
-                      <button type="button" onClick={() => setAgentAInstruction("")} className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                      <button type="button" onClick={() => setAgentAInstruction("")} className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors">Clear</button>
                     )}
                   </div>
                 </div>
@@ -401,7 +401,7 @@ export default function CollaborativePage() {
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => setAgentBInstruction("Include statistical trends and market size data")}
@@ -410,7 +410,7 @@ export default function CollaborativePage() {
                       Use default
                     </button>
                     {agentBInstruction && (
-                      <button type="button" onClick={() => setAgentBInstruction("")} className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                      <button type="button" onClick={() => setAgentBInstruction("")} className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors">Clear</button>
                     )}
                   </div>
                 </div>
@@ -423,7 +423,7 @@ export default function CollaborativePage() {
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => setAgentCInstruction("Write in an executive summary style, 300 words max")}
@@ -432,7 +432,7 @@ export default function CollaborativePage() {
                       Use default
                     </button>
                     {agentCInstruction && (
-                      <button type="button" onClick={() => setAgentCInstruction("")} className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                      <button type="button" onClick={() => setAgentCInstruction("")} className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors">Clear</button>
                     )}
                   </div>
                 </div>
