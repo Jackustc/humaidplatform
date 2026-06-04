@@ -55,9 +55,10 @@ export async function POST(req: NextRequest) {
     logs.push(log("coordinator", "assignment", `Briefing all agents: ${brief.slice(0, 120)}${brief.length > 120 ? "…" : ""}`));
 
     // ── STEP 1: All three agents generate in parallel (with retry) ────────────
-    const promptA = `You are Agent A. Brief: ${brief}\nWrite a professional report, 200 words max, with in-text citations in Author (Year) format. Add a short "References" section at the end listing each cited source in APA format. Return ONLY the report text and References section.`;
-    const promptB = `You are Agent B. Brief: ${brief}\nWrite a professional report, 200 words max, with in-text citations in Author (Year) format. Add a short "References" section at the end listing each cited source in APA format. Return ONLY the report text and References section.`;
-    const promptC = `You are Agent C. Brief: ${brief}\nWrite a professional report, 200 words max, with in-text citations in Author (Year) format. Add a short "References" section at the end listing each cited source in APA format. Return ONLY the report text and References section.`;
+    const reportInstruction = `Write a professional industry report, 200 words max, with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers). Write in plain prose paragraphs. End with a "References" section listing each cited source in APA format on a separate line. Return ONLY the report text followed by the References section.`;
+    const promptA = `You are Agent A. Brief: ${brief}\n${reportInstruction}`;
+    const promptB = `You are Agent B. Brief: ${brief}\n${reportInstruction}`;
+    const promptC = `You are Agent C. Brief: ${brief}\n${reportInstruction}`;
 
     const [outputA, outputB, outputC] = await Promise.all([
       withRetry(() =>

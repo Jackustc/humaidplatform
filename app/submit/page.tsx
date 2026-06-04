@@ -24,7 +24,7 @@ function renderMarkdown(md: string): string {
     const trimmed = line.trim();
 
     // Detect "References" / "References:" heading
-    if (/^references?:?\s*$/i.test(trimmed)) {
+    if (/^(\*{1,2})?references?:?(\*{1,2})?\s*$/i.test(trimmed)) {
       if (inList) { result.push("</ul>"); inList = false; }
       if (inRefList) { result.push("</ol>"); inRefList = false; }
       result.push(`<p style="font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin:20px 0 8px;border-top:1px solid #e5e7eb;padding-top:12px">References</p>`);
