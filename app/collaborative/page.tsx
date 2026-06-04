@@ -260,9 +260,29 @@ export default function CollaborativePage() {
         <span className="font-mono text-xs text-gray-400 tabular-nums">{timer}</span>
       </div>
 
-      <div className="mb-8" style={{ textAlign: "center" }}>
+      <div className="mb-6" style={{ textAlign: "center" }}>
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Collaborative Mode</h1>
         <p className="text-sm text-gray-500">The Orchestrator coordinates Agent A, B, and C through a sequential pipeline. You can see every decision it makes.</p>
+      </div>
+
+      {/* How it works */}
+      <div className="border border-gray-200 rounded-lg p-5 mb-6 bg-gray-50">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">How It Works</p>
+        <p className="text-sm text-gray-600 leading-relaxed mb-3">
+          The Orchestrator coordinates the entire pipeline, including assigning tasks to different AI agents. The sample tasks for each agent are listed below — the Orchestrator can change these. You can also help the Orchestrator re-define the task for each AI agent.
+        </p>
+        <div className="space-y-1.5">
+          {[
+            { agent: "Agent A", task: "Identify and compile relevant keywords and search terms related to the topic" },
+            { agent: "Agent B", task: "Find credible industry sources and research papers using the provided keywords" },
+            { agent: "Agent C", task: "Synthesise the gathered sources into a structured, professional industrial report" },
+          ].map(({ agent, task }) => (
+            <div key={agent} className="flex gap-3 text-sm">
+              <span className="font-medium text-gray-700 w-16 flex-shrink-0">{agent}</span>
+              <span className="text-gray-500">{task}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Brief phase */}
