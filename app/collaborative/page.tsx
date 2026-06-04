@@ -43,14 +43,20 @@ function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).len
 
 /** Split report text into body and references array */
 function parseReport(text: string): { body: string; references: string[] } {
-  const refMatch = text.match(/\n\s*references?\s*\n/i);
-  if (!refMatch || refMatch.index === undefined) return { body: text, references: [] };
+  // Match "References", "References:", "REFERENCES", etc. at the start of a line
+  const refMatch = text.match(/\n\s*references?:?\s*\n/i);
+  if (!refMatch || refMatch.index === undefined) {
+    // Also try matching at very start of a line even without leading newline
+    const altMatch = text.match(/^references?:?\s*\n/im);
+    if (!altMatch || altMatch.index === undefined) return { body: text, references: [] };
+    const body = text.slice(0, altMatch.index).trim();
+    const refBlock = text.slice(altMatch.index + altMatch[0].length).trim();
+    const references = refBlock.split("\n").map((l) => l.replace(/^\s*[-•*\d.]+\s*/, "").trim()).filter(Boolean);
+    return { body, references };
+  }
   const body = text.slice(0, refMatch.index).trim();
   const refBlock = text.slice(refMatch.index + refMatch[0].length).trim();
-  const references = refBlock
-    .split("\n")
-    .map((l) => l.replace(/^\s*[-•*]\s*/, "").trim())
-    .filter(Boolean);
+  const references = refBlock.split("\n").map((l) => l.replace(/^\s*[-•*\d.]+\s*/, "").trim()).filter(Boolean);
   return { body, references };
 }
 
@@ -583,8 +589,26 @@ export default function CollaborativePage() {
                   onChange={(e) => setDisagreeText(e.target.value)}
                   placeholder="e.g. The report is too academic. Make it more practical and focused on cost implications..."
                   rows={3}
-                  className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors mb-3"
+                  className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors mb-2"
                 />
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setDisagreeText("The report is too academic. Make it more practical and focused on cost implications for senior managers.")}
+                    className="text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-900 hover:border-gray-900 hover:text-white px-3 py-1.5 rounded-md transition-colors"
+                  >
+                    Use default feedback
+                  </button>
+                  {disagreeText && (
+                    <button
+                      type="button"
+                      onClick={() => setDisagreeText("")}
+                      className="text-xs font-medium border border-red-200 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white px-3 py-1.5 rounded-md transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
                 {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
                 <div style={{ textAlign: "center" }}>
                   <button
