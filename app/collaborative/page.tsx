@@ -39,14 +39,6 @@ const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text:
   agent_c:      { label: "Agent C",      bg: "bg-violet-100",   text: "text-violet-800" },
 };
 
-const TYPE_PREFIX: Record<LogEntry["type"], string> = {
-  plan:       "📋 Plan",
-  assignment: "→ Assigning",
-  output:     "✓ Output",
-  review:     "🔍 Review",
-  final:      "✅ Complete",
-};
-
 function wordCount(t: string) { return t.trim().split(/\s+/).filter(Boolean).length; }
 
 // Tracks how far the user has scrolled through a panel (25/50/75/100% milestones).
@@ -85,16 +77,12 @@ function useTimer() {
 
 function LogBubble({ entry }: { entry: LogEntry }) {
   const cfg = ACTOR_CONFIG[entry.actor];
-  const prefix = TYPE_PREFIX[entry.type];
   return (
     <div className="flex gap-3 py-2.5 border-b border-gray-50 last:border-0">
       <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 h-fit mt-0.5 ${cfg.bg} ${cfg.text}`}>
         {cfg.label}
       </span>
-      <div>
-        <span className="text-xs font-medium text-gray-400 mr-1.5">{prefix}</span>
-        <span className="text-xs text-gray-600 leading-relaxed">{entry.content}</span>
-      </div>
+      <span className="text-xs text-gray-600 leading-relaxed">{entry.content}</span>
     </div>
   );
 }
@@ -452,10 +440,13 @@ export default function CollaborativePage() {
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-gray-900 rounded-full animate-pulse" />
+              <svg className="w-4 h-4 text-gray-700 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
               <p className="text-sm font-medium text-gray-700">Orchestrator is coordinating the pipeline…</p>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">Each agent is being briefed and reviewed.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Each agent is being briefed and reviewed. This may take up to 30 seconds.</p>
           </div>
           <div className="p-5"><LogSkeleton /></div>
         </div>
