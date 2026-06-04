@@ -257,7 +257,7 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-8" style={{ textAlign: "center" }}>
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Review and Submit</h1>
         <p className="text-sm text-gray-500">Review your answer and complete the short survey before submitting.</p>
