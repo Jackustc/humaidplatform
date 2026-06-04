@@ -298,6 +298,13 @@ export default function CollaborativePage() {
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
+            <button
+              type="button"
+              onClick={() => setUserTask("Write an industry report on the impact of Generative AI on the manufacturing sector")}
+              className="mt-1.5 text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors"
+            >
+              Use default task
+            </button>
           </div>
 
           <div>
@@ -312,6 +319,13 @@ export default function CollaborativePage() {
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
+            <button
+              type="button"
+              onClick={() => setPreferences("Focus on cost implications, keep the tone practical, target audience is senior managers")}
+              className="mt-1.5 text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors"
+            >
+              Use default preferences
+            </button>
           </div>
 
           <div>
