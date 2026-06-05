@@ -14,22 +14,12 @@ type LogEntry = {
   content: string;
 };
 
-type Paper = {
-  title: string;
-  authors: string;
-  year: number;
-  journal: string;
-  relevance: "High" | "Medium" | "Low";
-  summary: string;
-};
-
 type Round = {
   roundNumber: number;
   userMessage: string;
   logs: LogEntry[];
-  keywords: string[];
-  papers: Paper[];
   summary: string;
+  contributions?: { agentA: string; agentB: string };
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
@@ -182,9 +172,8 @@ export default function CollaborativePage() {
         roundNumber: roundNum,
         userMessage: message,
         logs: data.logs ?? [],
-        keywords: data.keywords ?? [],
-        papers: data.papers ?? [],
         summary: data.summary ?? "",
+        contributions: data.contributions,
       };
       setRounds((prev) => [...prev, round]);
       setCurrentRound(round);
@@ -193,7 +182,7 @@ export default function CollaborativePage() {
       setPhase("complete");
       setShowDisagree(false);
       setDisagreeText("");
-      logEvent("orchestrator_complete", { round: roundNum, keywords: data.keywords?.length, papers: data.papers?.length });
+      logEvent("orchestrator_complete", { round: roundNum });
     } catch {
       setError("The orchestrator encountered an error. Please try again.");
       setPhase(roundNum === 1 ? "brief" : "complete");
@@ -232,7 +221,10 @@ export default function CollaborativePage() {
     submittingRef.current = true;
     const provenanceSources = [
       { id: "agent_c_summary", text: originalSummary },
-      ...(currentRound?.papers.map((p, i) => ({ id: `paper_${i}`, text: p.summary })) ?? []),
+      ...(currentRound?.contributions ? [
+        { id: "agent_a_contribution", text: currentRound.contributions.agentA },
+        { id: "agent_b_contribution", text: currentRound.contributions.agentB },
+      ] : []),
     ];
     const provenanceSpans = computeProvenance(finalText, provenanceSources);
     const provenanceSummary = summariseProvenance(provenanceSpans);
@@ -253,7 +245,7 @@ export default function CollaborativePage() {
       charsRemoved: Math.max(0, originalSummary.length - finalText.length),
       provenanceSpans,
       provenanceSummary,
-      rounds: rounds.map((r) => ({ roundNumber: r.roundNumber, userMessage: r.userMessage, keywordCount: r.keywords.length, paperCount: r.papers.length, logs: r.logs })),
+      rounds: rounds.map((r) => ({ roundNumber: r.roundNumber, userMessage: r.userMessage, logs: r.logs })),
       events: getEvents(),
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
@@ -490,7 +482,7 @@ export default function CollaborativePage() {
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 text-sm">Round {currentRound.roundNumber} — Orchestrator Log</p>
-                <p className="text-xs text-gray-400 mt-0.5">{currentRound.logs.length} events · {currentRound.keywords.length} keywords · {currentRound.papers.length} sources</p>
+                <p className="text-xs text-gray-400 mt-0.5">{currentRound.logs.length} events · 3 agents collaborated</p>
               </div>
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-mono">Complete</span>
             </div>
