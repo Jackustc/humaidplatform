@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const [outputA, outputB, outputC] = await Promise.all([
       withRetry(() =>
         openaiClient.chat.completions
-          .create({ model: "gpt-5.5", messages: [{ role: "user", content: promptA }] })
+          .create({ model: "gpt-5.5", reasoning_effort: "minimal", messages: [{ role: "user", content: promptA }] })
           .then((r) => r.choices[0].message.content ?? "")
       ).catch((e) => { throw new Error(`Agent A failed: ${e.message}`); }),
 
@@ -95,6 +95,7 @@ Format: One short paragraph on the first report, then one short paragraph on the
         openaiClient.chat.completions
           .create({
             model: "gpt-5.5",
+            reasoning_effort: "minimal",
             messages: [
               { role: "system", content: critiqueSystem },
               { role: "user", content: `Review these two reports and write a brief professional critique of each.\n\nReport B:\n${outputB}\n\nReport C:\n${outputC}` },
@@ -126,6 +127,7 @@ Format: One short paragraph on the first report, then one short paragraph on the
     const decisionRes = await withRetry(() =>
       openaiClient.chat.completions.create({
         model: "gpt-5.5",
+        reasoning_effort: "minimal",
         response_format: { type: "json_object" },
         messages: [
           {
