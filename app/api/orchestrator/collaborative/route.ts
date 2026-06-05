@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     // it must use those exactly. Otherwise it divides the work itself.
     const planRes = await client.chat.completions.create({
       model: "gpt-5.5",
-      reasoning_effort: "minimal",
+      reasoning_effort: "none",
       response_format: { type: "json_object" },
       messages: [
         {
@@ -99,7 +99,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
       client.chat.completions
         .create({
           model: "gpt-5.5",
-          reasoning_effort: "minimal",
+          reasoning_effort: "none",
           messages: [
             { role: "system", content: `You are Agent A, the first agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete the task the Orchestrator assigns. Be thorough and well-organised — your output will be passed to Agent B. Return only your work, no preamble.` },
             { role: "user", content: `Your assigned task: ${taskA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
