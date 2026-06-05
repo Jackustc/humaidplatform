@@ -57,9 +57,9 @@ export async function POST(req: NextRequest) {
   const requirements = userMessage && userMessage !== "No specific requirements." ? userMessage : "";
 
   try {
-    // ── STEP 0: Orchestrator plans the whole pipeline (GPT-4o) ───────────────
-    // It decides what EACH agent does. If the user assigned specific roles,
-    // it must use those exactly. Otherwise it divides the work itself.
+    // ── STEP 0+1: Orchestrator plans AND Agent A executes (one GPT-5.5 call) ──
+    // Both the orchestrator and Agent A are GPT-5.5, so we combine planning and
+    // Agent A's work into a single call to stay within the serverless time limit.
     const planRes = await client.chat.completions.create({
       model: "gpt-5.5",
       reasoning_effort: "none",
@@ -67,45 +67,30 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are the Main Orchestrator coordinating three AI agents (Agent A, Agent B, Agent C) who work in sequence to produce one industrial report. Agent A works first, then Agent B builds on A's work, then Agent C produces the final report using everything before it.
+          content: `You are the Main Orchestrator coordinating three AI agents (Agent A, Agent B, Agent C) who work in sequence to produce one industrial report on "${topic}". Agent A works first, then Agent B builds on A's work, then Agent C produces the final report.
 
-Your job: assign a clear, specific task to EACH agent so that together they produce a high-quality report.
+Do TWO things in this single response:
+1. Assign a clear, specific task to EACH agent (A, B, C). If the user assigned a specific role/instruction to any agent, you MUST use it exactly. For unassigned agents, divide the work however you see fit (research, analysis, writing, in any order). Agent C must produce the final report.
+2. Acting AS Agent A, actually COMPLETE Agent A's assigned task now (focused and concise, under 250 words) so its output can be passed to Agent B.
 
-RULES:
-- If the user assigned a specific role or instruction to any agent, you MUST use it exactly as their task — do not change or override it.
-- For any agent the user did NOT assign, decide its task yourself. You may divide the work any way you see fit (e.g. research, data gathering, analysis, structuring, writing) and assign roles in ANY order across the three agents.
-- Agent C produces the final deliverable (the report), so its task should result in the finished report.
-
-Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agentCTask": string }`,
+Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agentCTask": string, "agentAOutput": string }`,
         },
         {
           role: "user",
           content: isReRun
-            ? `Round ${round}. The user was not satisfied with the previous report:\n${previousSummary}\n\nUser feedback: "${userMessage}"\n\nRe-plan the three agents' tasks to address this feedback. Return JSON.`
-            : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nAssign a task to each of Agent A, Agent B, and Agent C. Return JSON.`,
+            ? `Round ${round}. The user was not satisfied with the previous report:\n${previousSummary}\n\nUser feedback: "${userMessage}"\n\nRe-plan the three agents' tasks and complete Agent A's task. Return JSON.`
+            : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nAssign tasks to A, B, C and complete Agent A's task. Return JSON.`,
         },
       ],
-    }, { timeout: 15000 });
+    }, { timeout: 28000 });
     const plan = safeParse(planRes.choices[0].message.content);
-    const taskA = plan.agentATask || `Research and gather the key facts, data, and themes needed for a report on "${topic}".`;
-    const taskB = plan.agentBTask || `Build on Agent A's work — find supporting evidence, sources, and analysis for the report.`;
+    const taskA = plan.agentATask || `Research the key facts and themes for a report on "${topic}".`;
+    const taskB = plan.agentBTask || `Build on Agent A's work — find supporting evidence, sources, and analysis.`;
     const taskC = plan.agentCTask || `Write the final professional industrial report using the work from Agent A and Agent B.`;
+    const outputA = plan.agentAOutput || "";
 
     logs.push(log("orchestrator", "plan", plan.plan ?? "Dividing the work across the three agents."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent A — ${taskA}`));
-
-    // ── STEP 1: Agent A executes its assigned task (GPT-5.5, no retry) ───────
-    const outputA = await client.chat.completions
-      .create({
-        model: "gpt-5.5",
-        reasoning_effort: "none",
-        messages: [
-          { role: "system", content: `You are Agent A, the first agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete the task the Orchestrator assigns. Be focused and concise (under 250 words) — your output will be passed to Agent B. Return only your work, no preamble.` },
-          { role: "user", content: `Your assigned task: ${taskA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
-        ],
-      }, { timeout: 15000 })
-      .then((r) => r.choices[0].message.content ?? "")
-      .catch((e) => { throw new Error(`Agent A failed: ${e.message}`); });
     logs.push(log("agent_a", "output", snippet(outputA)));
 
     // ── STEP 2: Orchestrator hands off to Agent B (no extra LLM call) ────────
@@ -118,7 +103,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     const outputB = await callDeepSeek([
       { role: "system", content: `You are Agent B, the second agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Build on Agent A's work to complete your assigned task. Be focused and concise (under 250 words). Your output will be passed to Agent C. Return only your work, no preamble.` },
       { role: "user", content: `Your assigned task: ${finalTaskB}\n\nAgent A's work so far:\n${outputA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
-    ] as Msg[], 0.7, 18000)
+    ] as Msg[], 0.7, 16000)
       .catch((e) => { throw new Error(`Agent B failed: ${e.message}`); });
     logs.push(log("agent_b", "output", snippet(outputB)));
 
@@ -131,7 +116,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     const summary = await callGroq([
       { role: "system", content: `You are Agent C, the final agent in a 3-agent collaborative pipeline. Using the work from Agent A and Agent B, produce the FINAL industrial report on "${topic}". Write in clear, professional prose with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers). End with a "References" section listing each cited source in APA format, one per line.` },
       { role: "user", content: `Your assigned task: ${finalTaskC}\n\nAgent A's contribution:\n${outputA}\n\nAgent B's contribution:\n${outputB}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) followed by the References section. Return ONLY the report and references.` },
-    ] as Msg[], 0.7, 15000)
+    ] as Msg[], 0.7, 10000)
       .catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
     logs.push(log("agent_c", "output", `Final report drafted (${summary.split(/\s+/).length} words).`));
 
