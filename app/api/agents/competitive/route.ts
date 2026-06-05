@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       withRetry(() =>
         openaiClient.chat.completions
           .create({
-            model: "gpt-4o", temperature: 0.8,
+            model: "gpt-5.5", temperature: 0.8,
             messages: [
               { role: "system", content: AGENTS[0].systemPrompt },
               { role: "user", content: userPrompt },
