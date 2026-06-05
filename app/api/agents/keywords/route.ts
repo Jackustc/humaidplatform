@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
           content: `Generate a list of 12–15 specific search keywords and phrases for a literature review on the topic: "${topic}". Return ONLY a JSON array of strings, no explanation. Example format: ["keyword one", "keyword two"]`,
         },
       ],
-      temperature: 0.7,
       response_format: { type: "json_object" },
     });
 

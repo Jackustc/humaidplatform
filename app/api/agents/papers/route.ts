@@ -32,7 +32,6 @@ Return ONLY a JSON object with a "papers" array. Each paper should have:
 - summary (string, 1–2 sentences describing the paper's key finding)`,
         },
       ],
-      temperature: 0.7,
       response_format: { type: "json_object" },
     });
 

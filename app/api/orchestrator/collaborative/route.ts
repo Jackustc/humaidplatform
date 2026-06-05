@@ -62,7 +62,6 @@ export async function POST(req: NextRequest) {
     // it must use those exactly. Otherwise it divides the work itself.
     const planRes = await client.chat.completions.create({
       model: "gpt-5.5",
-      temperature: 0.7,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -99,7 +98,6 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
       client.chat.completions
         .create({
           model: "gpt-5.5",
-          temperature: 0.7,
           messages: [
             { role: "system", content: `You are Agent A, the first agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete the task the Orchestrator assigns. Be thorough and well-organised — your output will be passed to Agent B. Return only your work, no preamble.` },
             { role: "user", content: `Your assigned task: ${taskA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
@@ -112,7 +110,6 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     // ── STEP 2: Orchestrator reviews A, may refine B's task (GPT-4o) ─────────
     const reviewARes = await client.chat.completions.create({
       model: "gpt-5.5",
-      temperature: 0.5,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: "You are the Main Orchestrator. Briefly review Agent A's output, then finalise Agent B's task. IMPORTANT: if the user assigned a specific role to Agent B, keep it exactly. Return JSON: { \"review\": string, \"agentBTask\": string }" },
@@ -136,7 +133,6 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     // ── STEP 4: Orchestrator reviews B, may refine C's task (GPT-4o) ─────────
     const reviewBRes = await client.chat.completions.create({
       model: "gpt-5.5",
-      temperature: 0.5,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: "You are the Main Orchestrator. Briefly review Agent B's output, then finalise Agent C's task. Agent C produces the FINAL report. IMPORTANT: if the user assigned a specific role to Agent C, keep it exactly. Return JSON: { \"review\": string, \"agentCTask\": string }" },
@@ -160,7 +156,6 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     // ── STEP 6: Orchestrator final message (GPT-4o) ──────────────────────────
     const finalRes = await client.chat.completions.create({
       model: "gpt-5.5",
-      temperature: 0.6,
       messages: [
         { role: "system", content: "You are the Main Orchestrator. Write a 2-sentence completion message to the user summarising how the three agents collaborated to produce the report. Be professional and concise." },
         { role: "user", content: `Pipeline complete. Round ${round}.\nAgent A task: ${taskA}\nAgent B task: ${finalTaskB}\nAgent C task: ${finalTaskC}\nFinal report length: ${summary.split(/\s+/).length} words. Write the completion message.` },

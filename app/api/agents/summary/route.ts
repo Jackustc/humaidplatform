@@ -40,7 +40,6 @@ Write 3 well-developed paragraphs (around 350–450 words total) that:
 Use in-text citations (e.g. Smith & Jones, 2023). Return ONLY the summary text, no headings or JSON.`,
         },
       ],
-      temperature: 0.7,
     });
 
     const summary = completion.choices[0].message.content ?? "";
