@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { checkEnv } from "@/lib/env";
-import { callDeepSeek, callGroq, withRetry, Msg } from "@/lib/api-helpers";
+import { callDeepSeek, callGroq, Msg } from "@/lib/api-helpers";
 checkEnv();
 
 export const maxDuration = 60;
@@ -85,7 +85,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
             : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nAssign a task to each of Agent A, Agent B, and Agent C. Return JSON.`,
         },
       ],
-    });
+    }, { timeout: 15000 });
     const plan = safeParse(planRes.choices[0].message.content);
     const taskA = plan.agentATask || `Research and gather the key facts, data, and themes needed for a report on "${topic}".`;
     const taskB = plan.agentBTask || `Build on Agent A's work — find supporting evidence, sources, and analysis for the report.`;
@@ -94,19 +94,18 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     logs.push(log("orchestrator", "plan", plan.plan ?? "Dividing the work across the three agents."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent A — ${taskA}`));
 
-    // ── STEP 1: Agent A executes its assigned task (GPT-4o) ──────────────────
-    const outputA = await withRetry(() =>
-      client.chat.completions
-        .create({
-          model: "gpt-5.5",
-          reasoning_effort: "none",
-          messages: [
-            { role: "system", content: `You are Agent A, the first agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete the task the Orchestrator assigns. Be thorough and well-organised — your output will be passed to Agent B. Return only your work, no preamble.` },
-            { role: "user", content: `Your assigned task: ${taskA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
-          ],
-        })
-        .then((r) => r.choices[0].message.content ?? "")
-    ).catch((e) => { throw new Error(`Agent A failed: ${e.message}`); });
+    // ── STEP 1: Agent A executes its assigned task (GPT-5.5, no retry) ───────
+    const outputA = await client.chat.completions
+      .create({
+        model: "gpt-5.5",
+        reasoning_effort: "none",
+        messages: [
+          { role: "system", content: `You are Agent A, the first agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete the task the Orchestrator assigns. Be focused and concise (under 250 words) — your output will be passed to Agent B. Return only your work, no preamble.` },
+          { role: "user", content: `Your assigned task: ${taskA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
+        ],
+      }, { timeout: 15000 })
+      .then((r) => r.choices[0].message.content ?? "")
+      .catch((e) => { throw new Error(`Agent A failed: ${e.message}`); });
     logs.push(log("agent_a", "output", snippet(outputA)));
 
     // ── STEP 2: Orchestrator hands off to Agent B (no extra LLM call) ────────
@@ -115,13 +114,12 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     logs.push(log("orchestrator", "review", "Reviewed Agent A's work — looks solid. Passing to Agent B."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent B — ${finalTaskB}`));
 
-    // ── STEP 3: Agent B executes its task using A's output (DeepSeek) ────────
-    const outputB = await withRetry(() =>
-      callDeepSeek([
-        { role: "system", content: `You are Agent B, the second agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Build on Agent A's work to complete your assigned task. Your output will be passed to Agent C. Return only your work, no preamble.` },
-        { role: "user", content: `Your assigned task: ${finalTaskB}\n\nAgent A's work so far:\n${outputA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
-      ] as Msg[], 0.7)
-    ).catch((e) => { throw new Error(`Agent B failed: ${e.message}`); });
+    // ── STEP 3: Agent B executes its task using A's output (DeepSeek, no retry) ──
+    const outputB = await callDeepSeek([
+      { role: "system", content: `You are Agent B, the second agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Build on Agent A's work to complete your assigned task. Be focused and concise (under 250 words). Your output will be passed to Agent C. Return only your work, no preamble.` },
+      { role: "user", content: `Your assigned task: ${finalTaskB}\n\nAgent A's work so far:\n${outputA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
+    ] as Msg[], 0.7, 18000)
+      .catch((e) => { throw new Error(`Agent B failed: ${e.message}`); });
     logs.push(log("agent_b", "output", snippet(outputB)));
 
     // ── STEP 4: Orchestrator hands off to Agent C (no extra LLM call) ────────
@@ -129,13 +127,12 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     logs.push(log("orchestrator", "review", "Reviewed Agent B's work — good coverage. Passing to Agent C for the final report."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent C — ${finalTaskC}`));
 
-    // ── STEP 5: Agent C produces the final report (Groq) ─────────────────────
-    const summary = await withRetry(() =>
-      callGroq([
-        { role: "system", content: `You are Agent C, the final agent in a 3-agent collaborative pipeline. Using the work from Agent A and Agent B, produce the FINAL industrial report on "${topic}". Write in clear, professional prose with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers). End with a "References" section listing each cited source in APA format, one per line.` },
-        { role: "user", content: `Your assigned task: ${finalTaskC}\n\nAgent A's contribution:\n${outputA}\n\nAgent B's contribution:\n${outputB}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) followed by the References section. Return ONLY the report and references.` },
-      ] as Msg[], 0.7)
-    ).catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
+    // ── STEP 5: Agent C produces the final report (Groq, no retry) ───────────
+    const summary = await callGroq([
+      { role: "system", content: `You are Agent C, the final agent in a 3-agent collaborative pipeline. Using the work from Agent A and Agent B, produce the FINAL industrial report on "${topic}". Write in clear, professional prose with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers). End with a "References" section listing each cited source in APA format, one per line.` },
+      { role: "user", content: `Your assigned task: ${finalTaskC}\n\nAgent A's contribution:\n${outputA}\n\nAgent B's contribution:\n${outputB}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) followed by the References section. Return ONLY the report and references.` },
+    ] as Msg[], 0.7, 15000)
+      .catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
     logs.push(log("agent_c", "output", `Final report drafted (${summary.split(/\s+/).length} words).`));
 
     // ── STEP 6: Orchestrator completion message (static, no LLM call) ────────
