@@ -165,7 +165,12 @@ export default function CollaborativePage() {
           round: roundNum,
         }),
       });
-      if (!res.ok) throw new Error("API error");
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        let errMsg = `Server error (HTTP ${res.status})`;
+        try { const j = JSON.parse(text); errMsg = j.error ?? errMsg; } catch {}
+        throw new Error(errMsg);
+      }
       const data = await res.json();
 
       const round: Round = {
@@ -183,8 +188,9 @@ export default function CollaborativePage() {
       setShowDisagree(false);
       setDisagreeText("");
       logEvent("orchestrator_complete", { round: roundNum });
-    } catch {
-      setError("The orchestrator encountered an error. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "The orchestrator encountered an error.";
+      setError(msg);
       setPhase(roundNum === 1 ? "brief" : "complete");
       logEvent("orchestrator_error", { round: roundNum });
     }

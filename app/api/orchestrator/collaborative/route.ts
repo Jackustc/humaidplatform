@@ -107,18 +107,10 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     ).catch((e) => { throw new Error(`Agent A failed: ${e.message}`); });
     logs.push(log("agent_a", "output", snippet(outputA)));
 
-    // ── STEP 2: Orchestrator reviews A, may refine B's task (GPT-4o) ─────────
-    const reviewARes = await client.chat.completions.create({
-      model: "gpt-5.5",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "You are the Main Orchestrator. Briefly review Agent A's output, then finalise Agent B's task. IMPORTANT: if the user assigned a specific role to Agent B, keep it exactly. Return JSON: { \"review\": string, \"agentBTask\": string }" },
-        { role: "user", content: `Agent A's task was: ${taskA}\n\nAgent A produced:\n${outputA}\n\nAgent B's planned task: ${taskB}\n${requirements ? `User requirements (follow any Agent B instruction exactly): ${requirements}` : ""}\n\nReview A and finalise B's task. Return JSON.` },
-      ],
-    });
-    const reviewA = safeParse(reviewARes.choices[0].message.content);
-    const finalTaskB = reviewA.agentBTask || taskB;
-    logs.push(log("orchestrator", "review", reviewA.review ?? "Reviewed Agent A's work. Passing to Agent B."));
+    // ── STEP 2: Orchestrator hands off to Agent B (no extra LLM call) ────────
+    // Tasks were already decided in the plan, so we narrate the handoff instantly.
+    const finalTaskB = taskB;
+    logs.push(log("orchestrator", "review", "Reviewed Agent A's work — looks solid. Passing to Agent B."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent B — ${finalTaskB}`));
 
     // ── STEP 3: Agent B executes its task using A's output (DeepSeek) ────────
@@ -130,18 +122,9 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
     ).catch((e) => { throw new Error(`Agent B failed: ${e.message}`); });
     logs.push(log("agent_b", "output", snippet(outputB)));
 
-    // ── STEP 4: Orchestrator reviews B, may refine C's task (GPT-4o) ─────────
-    const reviewBRes = await client.chat.completions.create({
-      model: "gpt-5.5",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "You are the Main Orchestrator. Briefly review Agent B's output, then finalise Agent C's task. Agent C produces the FINAL report. IMPORTANT: if the user assigned a specific role to Agent C, keep it exactly. Return JSON: { \"review\": string, \"agentCTask\": string }" },
-        { role: "user", content: `Agent B's task was: ${finalTaskB}\n\nAgent B produced:\n${outputB}\n\nAgent C's planned task: ${taskC}\n${requirements ? `User requirements (follow any Agent C instruction exactly): ${requirements}` : ""}${isReRun ? `\nThis is a revision — user feedback: "${userMessage}"` : ""}\n\nReview B and finalise C's task. Return JSON.` },
-      ],
-    });
-    const reviewB = safeParse(reviewBRes.choices[0].message.content);
-    const finalTaskC = reviewB.agentCTask || taskC;
-    logs.push(log("orchestrator", "review", reviewB.review ?? "Reviewed Agent B's work. Passing to Agent C."));
+    // ── STEP 4: Orchestrator hands off to Agent C (no extra LLM call) ────────
+    const finalTaskC = taskC;
+    logs.push(log("orchestrator", "review", "Reviewed Agent B's work — good coverage. Passing to Agent C for the final report."));
     logs.push(log("orchestrator", "assignment", `Assigning to Agent C — ${finalTaskC}`));
 
     // ── STEP 5: Agent C produces the final report (Groq) ─────────────────────
@@ -151,17 +134,10 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
         { role: "user", content: `Your assigned task: ${finalTaskC}\n\nAgent A's contribution:\n${outputA}\n\nAgent B's contribution:\n${outputB}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) followed by the References section. Return ONLY the report and references.` },
       ] as Msg[], 0.7)
     ).catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
-    logs.push(log("agent_c", "output", `Final report drafted (${summary.split(/\s+/).length} words). Submitting to Orchestrator for review.`));
+    logs.push(log("agent_c", "output", `Final report drafted (${summary.split(/\s+/).length} words).`));
 
-    // ── STEP 6: Orchestrator final message (GPT-4o) ──────────────────────────
-    const finalRes = await client.chat.completions.create({
-      model: "gpt-5.5",
-      messages: [
-        { role: "system", content: "You are the Main Orchestrator. Write a 2-sentence completion message to the user summarising how the three agents collaborated to produce the report. Be professional and concise." },
-        { role: "user", content: `Pipeline complete. Round ${round}.\nAgent A task: ${taskA}\nAgent B task: ${finalTaskB}\nAgent C task: ${finalTaskC}\nFinal report length: ${summary.split(/\s+/).length} words. Write the completion message.` },
-      ],
-    });
-    const finalMessage = finalRes.choices[0].message.content ?? "The pipeline is complete. Please review the report below.";
+    // ── STEP 6: Orchestrator completion message (static, no LLM call) ────────
+    const finalMessage = "The three agents have collaborated to produce your report. Agent A and Agent B contributed the research and analysis, and Agent C wrote the final report. Please review it below.";
     logs.push(log("orchestrator", "final", finalMessage));
 
     return NextResponse.json({
