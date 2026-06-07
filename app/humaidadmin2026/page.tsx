@@ -31,6 +31,9 @@ type RoundLog = {
   // collaborative extras
   keywordCount?: number;
   paperCount?: number;
+  tasks?: { agentA: string; agentB: string; agentC: string };
+  contributions?: { agentA: string; agentB: string };
+  summary?: string;
   // competitive extras
   agentOutputs?: AgentOutput[];
   coordinatorDecision?: string;
@@ -49,6 +52,8 @@ type Session = {
   charsAdded?: number;
   charsRemoved?: number;
   selectedAgentName?: string;
+  finalSubmission?: string;
+  originalSubmission?: string;
   confidenceRating: number;
   postTaskSurvey: Survey;
   demographics?: { ageRange: string; education: string; aiFamiliarity: string; fieldOfStudy: string };
@@ -182,6 +187,57 @@ function LogModal({ session, onClose }: { session: Session; onClose: () => void 
                   <p className="text-xs text-gray-300 pl-1">No log entries for this round.</p>
                 )}
 
+                {/* Collaborative: per-agent tasks + contributions */}
+                {(round.tasks || round.contributions || round.summary) && (
+                  <div className="mt-3 space-y-2">
+                    {round.tasks && (
+                      <div className="border border-gray-100 rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+                          <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">Agent Tasks Assigned by Orchestrator</p>
+                        </div>
+                        <table className="w-full text-xs">
+                          <tbody className="divide-y divide-gray-50">
+                            {[
+                              { label: "Agent A", task: round.tasks.agentA },
+                              { label: "Agent B", task: round.tasks.agentB },
+                              { label: "Agent C", task: round.tasks.agentC },
+                            ].map(({ label, task }) => (
+                              <tr key={label} className="align-top">
+                                <td className="px-3 py-2 font-semibold text-gray-600 w-20 whitespace-nowrap">{label}</td>
+                                <td className="px-3 py-2 text-gray-600 leading-relaxed">{task}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {round.contributions?.agentA && (
+                      <details className="border border-gray-100 rounded-lg">
+                        <summary className="px-4 py-2.5 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
+                          <span>Agent A — contribution</span><span className="text-gray-300">▸ expand</span>
+                        </summary>
+                        <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line mt-2">{round.contributions.agentA}</p></div>
+                      </details>
+                    )}
+                    {round.contributions?.agentB && (
+                      <details className="border border-gray-100 rounded-lg">
+                        <summary className="px-4 py-2.5 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
+                          <span>Agent B — contribution</span><span className="text-gray-300">▸ expand</span>
+                        </summary>
+                        <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line mt-2">{round.contributions.agentB}</p></div>
+                      </details>
+                    )}
+                    {round.summary && (
+                      <details className="border border-gray-100 rounded-lg">
+                        <summary className="px-4 py-2.5 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
+                          <span>Agent C — final report</span><span className="text-gray-300">▸ expand</span>
+                        </summary>
+                        <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line mt-2">{round.summary}</p></div>
+                      </details>
+                    )}
+                  </div>
+                )}
+
                 {/* Competitive: agent outputs */}
                 {round.agentOutputs && round.agentOutputs.length > 0 && (
                   <div className="mt-3 space-y-2">
@@ -218,6 +274,32 @@ function LogModal({ session, onClose }: { session: Session; onClose: () => void 
                 )}
               </div>
             ))
+          )}
+
+          {/* Final submission — original AI text vs user's edited version */}
+          {session.finalSubmission && (
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-widest">Final Submission</p>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${session.wasEdited ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>
+                  {session.wasEdited ? `Edited (+${session.charsAdded ?? 0} / -${session.charsRemoved ?? 0} chars)` : "Submitted unchanged"}
+                </span>
+              </div>
+              <div className="p-4 space-y-3">
+                {session.wasEdited && session.originalSubmission && (
+                  <details className="border border-gray-100 rounded-lg">
+                    <summary className="px-4 py-2.5 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
+                      <span>Original AI output (before user edits)</span><span className="text-gray-300">▸ expand</span>
+                    </summary>
+                    <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-500 leading-relaxed whitespace-pre-line mt-2">{session.originalSubmission}</p></div>
+                  </details>
+                )}
+                <div>
+                  <p className="text-xs font-medium text-gray-400 mb-1">{session.wasEdited ? "User's final (edited) submission" : "Submitted text"}</p>
+                  <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-line">{session.finalSubmission}</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

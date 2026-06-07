@@ -332,6 +332,7 @@ export default function CompetitivePage() {
       selectedAgent: selectedAgentId,
       selectedAgentName,
       finalSubmission: finalText,
+      originalSubmission: originalFinal,
       wasEdited: finalText !== originalFinal,
       originalLength: originalFinal.length,
       finalLength: finalText.length,

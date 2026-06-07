@@ -20,6 +20,7 @@ type Round = {
   logs: LogEntry[];
   summary: string;
   contributions?: { agentA: string; agentB: string };
+  tasks?: { agentA: string; agentB: string; agentC: string };
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
@@ -179,6 +180,7 @@ export default function CollaborativePage() {
         logs: data.logs ?? [],
         summary: data.summary ?? "",
         contributions: data.contributions,
+        tasks: data.tasks,
       };
       setRounds((prev) => [...prev, round]);
       setCurrentRound(round);
@@ -244,6 +246,7 @@ export default function CollaborativePage() {
       endTime: new Date().toISOString(),
       totalRounds: rounds.length,
       finalSubmission: finalText,
+      originalSubmission: originalSummary,
       wasEdited: finalText !== originalSummary,
       originalLength: originalSummary.length,
       finalLength: finalText.length,
@@ -251,7 +254,14 @@ export default function CollaborativePage() {
       charsRemoved: Math.max(0, originalSummary.length - finalText.length),
       provenanceSpans,
       provenanceSummary,
-      rounds: rounds.map((r) => ({ roundNumber: r.roundNumber, userMessage: r.userMessage, logs: r.logs })),
+      rounds: rounds.map((r) => ({
+        roundNumber: r.roundNumber,
+        userMessage: r.userMessage,
+        logs: r.logs,
+        tasks: r.tasks,
+        contributions: r.contributions,
+        summary: r.summary,
+      })),
       events: getEvents(),
     };
     sessionStorage.setItem("humaid_session_data", JSON.stringify(sessionData));
