@@ -128,7 +128,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
 
     // ── STEP 3: Agent B executes its task using A's output (DeepSeek) ────────
     const outputB = await callDeepSeek([
-      { role: "system", content: `You are Agent B, the second agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Build on Agent A's work to complete your assigned task. Be focused and concise (under 250 words). Your output will be passed to Agent C. Return only your work, no preamble.` },
+      { role: "system", content: `You are Agent B, the second agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Build on Agent A's work to complete your assigned task. Be focused and concise (under 250 words). Where relevant, reference real, named industry sources (e.g. McKinsey, Deloitte, Gartner, World Economic Forum, named companies/reports) with approximate years so the final report can cite them. Your output will be passed to Agent C. Return only your work, no preamble.` },
       { role: "user", content: `Your assigned task: ${taskB}\n\nAgent A's work so far:\n${outputA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
     ] as Msg[], 0.7, 16000)
       .catch((e) => { throw new Error(`Agent B failed: ${e.message}`); });
@@ -151,8 +151,13 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
 
     // ── STEP 5: Agent C produces the final report (Groq) ─────────────────────
     const summary = await callGroq([
-      { role: "system", content: `You are Agent C, the final agent in a 3-agent collaborative pipeline. Using the work from Agent A and Agent B, produce the FINAL industrial report on "${topic}". Write in clear, professional prose with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers). End with a "References" section listing each cited source in APA format, one per line.` },
-      { role: "user", content: `Your assigned task: ${taskC}\n\nAgent A's contribution:\n${outputA}\n\nAgent B's contribution:\n${outputB}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) followed by the References section. Return ONLY the report and references.` },
+      { role: "system", content: `You are Agent C, the final agent in a 3-agent collaborative pipeline. Using the work from Agent A and Agent B, produce the FINAL industrial report on "${topic}". Write in clear, professional prose with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers).
+
+CRITICAL CITATION RULES:
+- NEVER cite "Agent A", "Agent B", or "Agent C" as a source. They are your teammates, not references.
+- Cite only the real organizations, companies, reports, or authors that appear within Agent A's and Agent B's contributions (e.g. McKinsey, Deloitte, Siemens, Gartner, World Economic Forum, etc.).
+- End with a "References" section listing each cited real source in APA format, one per line. Do not include any entry that refers to an Agent.` },
+      { role: "user", content: `Your assigned task: ${taskC}\n\nAgent A's contribution:\n${outputA}\n\nAgent B's contribution:\n${outputB}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) with in-text citations to the REAL sources mentioned above (never to "Agent A/B/C"), followed by the References section. Return ONLY the report and references.` },
     ] as Msg[], 0.7, 15000)
       .catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
     logs.push(log("agent_c", "output", `Final report drafted (${summary.split(/\s+/).length} words).`));
