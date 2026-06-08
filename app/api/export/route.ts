@@ -110,20 +110,34 @@ function buildLogRows(sessions: Record<string, unknown>[]): (string | number)[][
 
 const EVENT_HEADERS = [
   "Session ID", "Mode", "Timestamp", "Event Type",
-  "Agent ID", "Scroll Depth %", "Dwell ms", "Text Length", "Source",
+  "Panel", "Scroll Depth %", "Char Count", "Word Count", "Round", "Details",
 ];
+
+/** Blank instead of 0 when a numeric field is absent, so empty cells read clearly */
+function numOrBlank(v: unknown): number | string {
+  return typeof v === "number" ? v : "";
+}
 
 function buildEventRows(sessions: Record<string, unknown>[]): (string | number)[][] {
   const rows: (string | number)[][] = [];
+  // Fields that get their own columns; everything else goes into "Details"
+  const KNOWN = new Set(["panel", "depthPct", "charCount", "wordCount", "round"]);
   for (const s of sessions) {
     for (const ev of (s.events ?? []) as Record<string, unknown>[]) {
       const p = (ev.payload ?? {}) as Record<string, unknown>;
+      const extras = Object.entries(p)
+        .filter(([k]) => !KNOWN.has(k))
+        .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+        .join("; ");
       rows.push([
         String(s.sessionId ?? ""), String(s.mode ?? ""),
         String(ev.timestamp ?? ""), String(ev.eventType ?? ""),
-        String(p.agentId ?? ""), Number(p.scrollDepthPct ?? ""),
-        Number(p.dwellMs ?? ""), Number(p.textLength ?? ""),
-        String(p.source ?? ""),
+        String(p.panel ?? ""),
+        numOrBlank(p.depthPct),
+        numOrBlank(p.charCount),
+        numOrBlank(p.wordCount),
+        numOrBlank(p.round),
+        extras,
       ]);
     }
   }
@@ -174,7 +188,7 @@ export async function GET(req: Request) {
       // Sheet 3 — Events
       const eventRows = buildEventRows(sessions);
       const ws3 = XLSX.utils.aoa_to_sheet([EVENT_HEADERS, ...eventRows]);
-      ws3["!cols"] = [20, 12, 20, 18, 10, 12, 10, 10, 14].map((wch) => ({ wch }));
+      ws3["!cols"] = [20, 12, 20, 18, 16, 12, 10, 10, 8, 40].map((wch) => ({ wch }));
       XLSX.utils.book_append_sheet(wb, ws3, "Events");
 
       const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
