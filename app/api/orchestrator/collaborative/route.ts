@@ -7,10 +7,11 @@ checkEnv();
 export const maxDuration = 300;
 
 // Orchestrator uses GPT-5.5 (needs reliable JSON mode)
+// maxRetries: 0 — auto-retry doubles latency on a sequential pipeline, which we can't afford.
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  timeout: 25000,
-  maxRetries: 1,
+  timeout: 40000,
+  maxRetries: 0,
 });
 
 export type LogEntry = {
@@ -96,7 +97,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
             : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nSuggested division strategy for this run (adapt it to the topic): ${DIVISION_STRATEGIES[Math.floor(Math.random() * DIVISION_STRATEGIES.length)]}\n\nAssign tasks to A, B, and C. Return JSON.`,
         },
       ],
-    }, { timeout: 15000 });
+    }, { timeout: 30000 });
     const plan = safeParse(planRes.choices[0].message.content);
     const taskA = plan.agentATask || `Research the key facts and themes for a report on "${topic}".`;
     let taskB = plan.agentBTask || `Build on Agent A's work — find supporting evidence, sources, and analysis.`;
@@ -113,7 +114,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
           { role: "system", content: `You are Agent A, the first agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete your assigned task — focused and concise (under 250 words). Your output will be passed to Agent B. Return only your work, no preamble.` },
           { role: "user", content: `Your assigned task: ${taskA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
         ],
-      }, { timeout: 18000 })
+      }, { timeout: 40000 })
       .then((r) => r.choices[0].message.content ?? "")
       .catch((e) => { throw new Error(`Agent A failed: ${e.message}`); });
     logs.push(log("agent_a", "output", snippet(outputA)));
@@ -127,7 +128,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
         { role: "system", content: "You are the Main Orchestrator. In one or two sentences, genuinely review Agent A's actual output below, then finalise Agent B's task. IMPORTANT: if the user assigned a specific role to Agent B, keep it exactly. Return JSON: { \"review\": string, \"agentBTask\": string }" },
         { role: "user", content: `Agent A's task was: ${taskA}\n\nAgent A's actual output:\n${outputA}\n\nAgent B's planned task: ${taskB}${requirements ? `\nUser requirements (follow any Agent B instruction exactly): ${requirements}` : ""}\n\nReview A and finalise B's task. Return JSON.` },
       ],
-    }, { timeout: 12000 });
+    }, { timeout: 20000 });
     const reviewA = safeParse(reviewARes.choices[0].message.content);
     if (reviewA.agentBTask) taskB = reviewA.agentBTask;
     logs.push(log("orchestrator", "review", reviewA.review || "Reviewed Agent A's work. Passing to Agent B."));
@@ -150,7 +151,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
         { role: "system", content: "You are the Main Orchestrator. In one or two sentences, genuinely review Agent B's actual output below, then finalise Agent C's task. Agent C produces the FINAL report. IMPORTANT: if the user assigned a specific role to Agent C, keep it exactly. Return JSON: { \"review\": string, \"agentCTask\": string }" },
         { role: "user", content: `Agent B's task was: ${taskB}\n\nAgent B's actual output:\n${outputB}\n\nAgent C's planned task: ${taskC}${requirements ? `\nUser requirements (follow any Agent C instruction exactly): ${requirements}` : ""}${isReRun ? `\nThis is a revision — user feedback: "${userMessage}"` : ""}\n\nReview B and finalise C's task. Return JSON.` },
       ],
-    }, { timeout: 12000 });
+    }, { timeout: 20000 });
     const reviewB = safeParse(reviewBRes.choices[0].message.content);
     if (reviewB.agentCTask) taskC = reviewB.agentCTask;
     logs.push(log("orchestrator", "review", reviewB.review || "Reviewed Agent B's work. Passing to Agent C."));
@@ -177,7 +178,7 @@ CRITICAL CITATION RULES:
         { role: "system", content: "You are the Main Orchestrator. In 2 sentences, summarise to the user how the three agents collaborated to produce this report. Be professional and specific to what each agent did." },
         { role: "user", content: `Agent A task: ${taskA}\nAgent B task: ${taskB}\nAgent C task: ${taskC}\nFinal report length: ${summary.split(/\s+/).length} words. Write the completion message.` },
       ],
-    }, { timeout: 10000 });
+    }, { timeout: 20000 });
     const finalMessage = finalRes.choices[0].message.content ?? "The three agents have collaborated to produce your report. Please review it below.";
     logs.push(log("orchestrator", "final", finalMessage));
 
