@@ -25,6 +25,17 @@ function log(actor: LogEntry["actor"], type: LogEntry["type"], content: string):
   return { id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), actor, type, content };
 }
 
+// Randomly chosen each run so the orchestrator varies how it divides the work
+// across the three agents instead of always using the same pattern.
+const DIVISION_STRATEGIES = [
+  "Agent A gathers data and evidence, Agent B analyses it and draws insights, Agent C writes the report.",
+  "Agent A defines scope and structure, Agent B researches and gathers sources, Agent C writes the report.",
+  "Agent A researches market context, Agent B researches challenges/risks and case studies, Agent C synthesises the report.",
+  "Agent A drafts an outline and key arguments, Agent B fills in evidence and counterpoints, Agent C polishes the final report.",
+  "Agent A identifies trends and opportunities, Agent B identifies barriers and financial implications, Agent C writes the report.",
+  "Agent A handles qualitative analysis, Agent B handles quantitative data and statistics, Agent C writes the report.",
+];
+
 function safeParse(s: string | null | undefined): Record<string, string> {
   try {
     return JSON.parse(s ?? "{}");
@@ -67,7 +78,7 @@ export async function POST(req: NextRequest) {
           role: "system",
           content: `You are the Main Orchestrator coordinating three AI agents (Agent A, Agent B, Agent C) who work in sequence to produce one industrial report on "${topic}". Agent A works first, then Agent B builds on A's work, then Agent C produces the final report.
 
-Assign a clear, specific task to EACH agent. If the user assigned a specific role/instruction to any agent, you MUST use it exactly. For unassigned agents, divide the work however you see fit (research, analysis, writing, in any order). Agent C must produce the final report.
+Assign a clear, specific task to EACH agent. If the user assigned a specific role/instruction to any agent, you MUST use it exactly. For unassigned agents, decide the division of work yourself — there is NO fixed convention, so vary the roles based on the specific topic and the suggested strategy below. The only fixed rule is that Agent C produces the final report.
 
 Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agentCTask": string }`,
         },
@@ -75,7 +86,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
           role: "user",
           content: isReRun
             ? `Round ${round}. The user was not satisfied with the previous report:\n${previousSummary}\n\nUser feedback: "${userMessage}"\n\nRe-plan the three agents' tasks to address this feedback. Return JSON.`
-            : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nAssign tasks to A, B, and C. Return JSON.`,
+            : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nSuggested division strategy for this run (adapt it to the topic): ${DIVISION_STRATEGIES[Math.floor(Math.random() * DIVISION_STRATEGIES.length)]}\n\nAssign tasks to A, B, and C. Return JSON.`,
         },
       ],
     }, { timeout: 15000 });

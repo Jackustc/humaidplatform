@@ -585,7 +585,7 @@ export default function CompetitivePage() {
                       flexShrink: 0,
                     }}
                   >
-                    {selectedAgentId === agent.id ? "✓ Selected" : "Use this"}
+                    {selectedAgentId === agent.id ? "Selected" : "Use this"}
                   </button>
                 </div>
                 {expandedAgents.has(agent.id) && (

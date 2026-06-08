@@ -73,13 +73,13 @@ const ACTOR_STYLE: Record<string, { bg: string; text: string; label: string }> =
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  plan:       "📋 Plan",
-  assignment: "→ Brief",
-  output:     "✓ Output",
-  review:     "🔍 Review",
-  critique:   "💬 Critique",
-  decision:   "⚖️ Decision",
-  final:      "✅ Complete",
+  plan:       "Plan",
+  assignment: "Brief",
+  output:     "Output",
+  review:     "Review",
+  critique:   "Critique",
+  decision:   "Decision",
+  final:      "Complete",
 };
 
 // ── Log Modal ───────────────────────────────────────────────────────────────
