@@ -44,9 +44,16 @@ function safeParse(s: string | null | undefined): Record<string, string> {
   }
 }
 
-/** Short one-line summary of an agent's output for the log */
+/** Short one-line summary of an agent's output for the log (markdown stripped) */
 function snippet(text: string, n = 140): string {
-  const clean = text.replace(/\s+/g, " ").trim();
+  const clean = text
+    .replace(/^#{1,6}\s+/gm, "")   // strip heading markers (##)
+    .replace(/\*\*(.+?)\*\*/g, "$1") // strip bold (**)
+    .replace(/\*(.+?)\*/g, "$1")     // strip italic (*)
+    .replace(/^[-*•]\s+/gm, "")      // strip bullet markers
+    .replace(/`+/g, "")              // strip code ticks
+    .replace(/\s+/g, " ")            // collapse whitespace
+    .trim();
   return clean.length > n ? clean.slice(0, n) + "…" : clean;
 }
 
