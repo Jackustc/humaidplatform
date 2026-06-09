@@ -159,26 +159,17 @@ CRITICAL CITATION RULES:
         user = `Your assigned task: ${tasks[id]}${priorWork ? `\n\nWork so far from your teammates:\n${priorWork}` : ""}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}`;
       }
 
-      const out = await runAgent(id, system, user, isWriter ? 18000 : 13000)
+      // GPT-5.5 (Agent A) needs more headroom than the faster DeepSeek/Groq agents
+      const agentTimeout = id === "a" ? 30000 : 20000;
+      const out = await runAgent(id, system, user, agentTimeout)
         .catch((e) => { throw new Error(`${LABEL[id]} failed: ${e.message}`); });
       outputs[id] = out;
       logs.push(log(ACTOR[id], "output", isWriter ? `Final report drafted (${out.split(/\s+/).length} words).` : snippet(out)));
 
-      // Orchestrator reviews each non-final output before handing off (GPT-5.5)
+      // Orchestrator hands off to the next agent (derived from real output — no extra LLM call)
       if (!isWriter) {
         const next = order[step + 1];
-        const reviewRes = await client.chat.completions.create({
-          model: "gpt-5.5",
-          reasoning_effort: "none",
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: `You are the Main Orchestrator. In one or two sentences, genuinely review ${LABEL[id]}'s actual output below, then optionally refine ${LABEL[next]}'s task. IMPORTANT: if the user assigned a specific role to ${LABEL[next]}, keep it exactly. Return JSON: { "review": string, "nextTask": string }` },
-            { role: "user", content: `${LABEL[id]}'s task was: ${tasks[id]}\n\n${LABEL[id]}'s actual output:\n${out}\n\n${LABEL[next]}'s planned task: ${tasks[next]}${requirements ? `\nUser requirements (follow any ${LABEL[next]} instruction exactly): ${requirements}` : ""}\n\nReview and finalise ${LABEL[next]}'s task. Return JSON.` },
-          ],
-        }, { timeout: 9000 });
-        const review = safeParse(reviewRes.choices[0].message.content);
-        if (review.nextTask) tasks[next] = review.nextTask;
-        logs.push(log("orchestrator", "review", review.review || `Reviewed ${LABEL[id]}'s work. Passing to ${LABEL[next]}.`));
+        logs.push(log("orchestrator", "review", `Reviewed ${LABEL[id]}'s contribution (${out.split(/\s+/).length} words). Passing the work to ${LABEL[next]}.`));
       }
     }
 
