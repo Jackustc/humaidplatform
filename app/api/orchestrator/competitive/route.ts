@@ -118,7 +118,7 @@ Format: One short paragraph on the first report, then one short paragraph on the
     ]);
 
     // Truncate critique for the log (full text is in agentOutputs)
-    const truncate = (s: string, n = 120) => s.replace(/\*\*/g, "").slice(0, n) + (s.length > n ? "…" : "");
+    const truncate = (s: string, n = 600) => s.replace(/\*\*/g, "").slice(0, n) + (s.length > n ? "…" : "");
     logs.push(log("agent_a", "critique", truncate(critiqueA)));
     logs.push(log("agent_b", "critique", truncate(critiqueB)));
     logs.push(log("agent_c", "critique", truncate(critiqueC)));

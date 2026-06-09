@@ -57,6 +57,41 @@ function scholarUrl(ref: string): string {
   return `https://scholar.google.com/scholar?q=${encodeURIComponent(ref)}`;
 }
 
+function applyInline(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+/** Render the report body markdown to clean HTML (headings, bold, lists, paragraphs) */
+function renderMarkdown(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let inList = false;
+  for (const line of lines) {
+    if (line.startsWith("### ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h3 style="font-size:13px;font-weight:600;color:#1f2937;margin:10px 0 4px">${applyInline(line.slice(4))}</h3>`);
+    } else if (line.startsWith("## ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h2 style="font-size:14px;font-weight:700;color:#111827;margin:12px 0 4px">${applyInline(line.slice(3))}</h2>`);
+    } else if (line.startsWith("# ")) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<h1 style="font-size:15px;font-weight:700;color:#111827;margin:12px 0 6px">${applyInline(line.slice(2))}</h1>`);
+    } else if (/^[-*] /.test(line)) {
+      if (!inList) { result.push('<ul style="margin:4px 0;padding-left:16px">'); inList = true; }
+      result.push(`<li style="font-size:13px;color:#374151;line-height:1.6;margin:2px 0">${applyInline(line.slice(2))}</li>`);
+    } else if (line.trim() === "") {
+      if (inList) { result.push("</ul>"); inList = false; }
+    } else {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(`<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 8px">${applyInline(line)}</p>`);
+    }
+  }
+  if (inList) result.push("</ul>");
+  return result.join("");
+}
+
 // Tracks how far the user has scrolled through a panel (25/50/75/100% milestones).
 // Returns a callback ref — pass it directly to a div's `ref` prop.
 function useScrollDepth(label: string) {
@@ -138,6 +173,7 @@ export default function CollaborativePage() {
   const [originalSummary, setOriginalSummary] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
+  const [editMode, setEditMode] = useState(false);
 
   const logPanelRef = useScrollDepth("orchestrator_log");
   const reportPanelRef = useScrollDepth("final_report");
@@ -526,24 +562,40 @@ export default function CollaborativePage() {
             const { body, references } = parseReport(finalText);
             return (
               <div ref={reportPanelRef} className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <p className="font-medium text-gray-900 text-sm">Your Report</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Produced by {currentRound.writer ? `Agent ${currentRound.writer.toUpperCase()}` : "the final agent"} and reviewed by the Orchestrator. Edit before submitting.</p>
+                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">Your Report</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Produced by {currentRound.writer ? `Agent ${currentRound.writer.toUpperCase()}` : "the final agent"} and reviewed by the Orchestrator. Edit before submitting.</p>
+                  </div>
+                  <button
+                    onClick={() => setEditMode((v) => !v)}
+                    style={{ fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 6, border: "1px solid #e5e7eb", background: "#fff", color: "#6b7280", cursor: "pointer", flexShrink: 0 }}
+                  >
+                    {editMode ? "Preview" : "Edit"}
+                  </button>
                 </div>
                 <div className="p-5">
-                  <textarea
-                    value={body}
-                    onChange={(e) => handleTextareaChange(
-                      references.length
-                        ? `${e.target.value}\n\nReferences\n${references.join("\n")}`
-                        : e.target.value
-                    )}
-                    rows={13}
-                    className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors"
-                  />
+                  {editMode ? (
+                    <textarea
+                      value={body}
+                      onChange={(e) => handleTextareaChange(
+                        references.length
+                          ? `${e.target.value}\n\nReferences\n${references.join("\n")}`
+                          : e.target.value
+                      )}
+                      rows={13}
+                      className="w-full border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:border-gray-400 transition-colors font-mono"
+                    />
+                  ) : (
+                    <div
+                      className="border border-gray-100 rounded-lg p-4 bg-gray-50 min-h-40 cursor-text"
+                      onClick={() => setEditMode(true)}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(body) }}
+                    />
+                  )}
                   <p className="text-xs text-gray-400 mt-1.5">
                     {finalText !== originalSummary ? "Modified from original — " : ""}
-                    {wordCount(finalText)} words
+                    {wordCount(finalText)} words · {editMode ? "editing" : "click to edit"}
                   </p>
                 </div>
 
