@@ -402,7 +402,7 @@ export default function CompetitivePage() {
             <textarea
               value={preferences}
               onChange={(e) => setPreferences(e.target.value)}
-              placeholder="e.g. Focus on cost implications, keep the tone practical, target audience is senior managers..."
+              placeholder="e.g., Focus on cost implications, keep the tone practical, target audience is senior managers..."
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
@@ -450,7 +450,7 @@ export default function CompetitivePage() {
                   <textarea
                     value={agentAInstruction}
                     onChange={(e) => setAgentAInstruction(e.target.value)}
-                    placeholder="e.g. Focus on data collection from recent 2025–2026 sources"
+                    placeholder="e.g., Focus on data collection from recent 2025–2026 sources"
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
@@ -464,7 +464,7 @@ export default function CompetitivePage() {
                   <textarea
                     value={agentBInstruction}
                     onChange={(e) => setAgentBInstruction(e.target.value)}
-                    placeholder="e.g. Include statistical trends and market size data"
+                    placeholder="e.g., Include statistical trends and market size data"
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
@@ -478,7 +478,7 @@ export default function CompetitivePage() {
                   <textarea
                     value={agentCInstruction}
                     onChange={(e) => setAgentCInstruction(e.target.value)}
-                    placeholder="e.g. Write in an executive summary style, 300 words max"
+                    placeholder="e.g., Write in an executive summary style, 300 words max"
                     rows={2}
                     className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                   />
@@ -667,7 +667,7 @@ export default function CompetitivePage() {
                 <textarea
                   value={disagreeText}
                   onChange={(e) => setDisagreeText(e.target.value)}
-                  placeholder="e.g. The output is too generic. I need more specific data and industry examples from the last 2 years..."
+                  placeholder="e.g., The output is too generic. I need more specific data and industry examples from the last 2 years..."
                   rows={3}
                   className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:border-gray-400 transition-colors mb-2"
                 />
