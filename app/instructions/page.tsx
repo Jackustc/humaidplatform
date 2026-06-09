@@ -37,21 +37,21 @@ export default function InstructionsPage() {
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">How It Works</p>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
-              In Collaborative Mode, three specialist agents work in sequence. Each agent hands its output to the next, building progressively toward a final report. An Orchestrator coordinates the entire pipeline and reviews each stage before passing it on.
+              In Collaborative Mode, three AI agents work in sequence. The Orchestrator reads your task and dynamically decides what each agent should do — the roles are not fixed. Each agent hands its output to the next, building progressively toward a final report, and the Orchestrator reviews each stage before passing it on.
             </p>
             <div className="space-y-4">
               {[
                 {
-                  label: "Agent A — Data Collection",
-                  desc: "Agent A receives your task and gathers the relevant data, sources, and evidence needed to address it. You can review what it has collected before the process continues. If you want changes, you can provide feedback to the Orchestrator to revise this stage.",
+                  label: "Step 1 — First agent",
+                  desc: "The Orchestrator assigns the first agent a task based on your prompt (for example, gathering data, defining the report's scope, or researching the topic). This agent's output becomes the foundation for the next stage.",
                 },
                 {
-                  label: "Agent B — Analysis & Statistics",
-                  desc: "Agent B receives Agent A's collected data and performs the analytical work: identifying patterns, computing statistics, and drawing out the key findings. Again, you can review this output and request revisions before moving on.",
+                  label: "Step 2 — Second agent",
+                  desc: "The second agent builds on the first agent's work with its own assigned task — such as analysis, gathering evidence, or adding depth. The Orchestrator reviews the first agent's output before briefing this stage.",
                 },
                 {
-                  label: "Agent C — Summary Writing",
-                  desc: "Agent C takes the analysis from Agent B and produces the final written report. This is your working draft. You can read it, edit it directly in the text editor, and revise it as much as you like before submitting.",
+                  label: "Step 3 — Final agent",
+                  desc: "The final agent synthesises everything into the finished report. This is your working draft — you can read it, edit it directly in the text editor, and revise it as much as you like before submitting.",
                 },
               ].map((step, i) => (
                 <div key={i} className="flex gap-3">
@@ -70,7 +70,7 @@ export default function InstructionsPage() {
               <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>At the start, you can provide the Orchestrator with your task description and any specific requirements or constraints.</li>
               <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>After the pipeline completes, you will see the Orchestrator's full activity log showing every decision and handoff between agents.</li>
               <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>If you are not satisfied with the result, you can give the Orchestrator written feedback and it will re-run the full pipeline incorporating your guidance.</li>
-              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Edit the final report from Agent C as you see fit before submitting it as your answer.</li>
+              <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>Edit the final report produced by the last agent as you see fit before submitting it as your answer.</li>
               <li className="flex gap-2"><span className="text-gray-400 flex-shrink-0">•</span>There are no right or wrong answers — your judgment about quality and relevance is what matters.</li>
             </ul>
           </div>
