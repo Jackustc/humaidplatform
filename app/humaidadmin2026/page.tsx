@@ -32,8 +32,10 @@ type RoundLog = {
   keywordCount?: number;
   paperCount?: number;
   tasks?: { agentA: string; agentB: string; agentC: string };
-  contributions?: { agentA: string; agentB: string };
+  contributions?: { agentA: string; agentB: string; agentC?: string };
   summary?: string;
+  writer?: "a" | "b" | "c";
+  order?: ("a" | "b" | "c")[];
   // competitive extras
   agentOutputs?: AgentOutput[];
   coordinatorDecision?: string;
@@ -211,30 +213,29 @@ function LogModal({ session, onClose }: { session: Session; onClose: () => void 
                         </table>
                       </div>
                     )}
-                    {round.contributions?.agentA && (
-                      <details className="border border-gray-100 rounded-lg">
-                        <summary className="px-4 py-2.5 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
-                          <span>Agent A — contribution</span><span className="text-gray-300">▸ expand</span>
-                        </summary>
-                        <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line mt-2">{round.contributions.agentA}</p></div>
-                      </details>
-                    )}
-                    {round.contributions?.agentB && (
-                      <details className="border border-gray-100 rounded-lg">
-                        <summary className="px-4 py-2.5 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
-                          <span>Agent B — contribution</span><span className="text-gray-300">▸ expand</span>
-                        </summary>
-                        <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line mt-2">{round.contributions.agentB}</p></div>
-                      </details>
-                    )}
-                    {round.summary && (
-                      <details className="border border-gray-100 rounded-lg">
-                        <summary className="px-4 py-2.5 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
-                          <span>Agent C — final report</span><span className="text-gray-300">▸ expand</span>
-                        </summary>
-                        <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line mt-2">{round.summary}</p></div>
-                      </details>
-                    )}
+                    {(() => {
+                      const contribMap: Record<string, string | undefined> = {
+                        a: round.contributions?.agentA,
+                        b: round.contributions?.agentB,
+                        c: round.contributions?.agentC,
+                      };
+                      const labelMap: Record<string, string> = { a: "Agent A", b: "Agent B", c: "Agent C" };
+                      // Use execution order if provided, else default a,b,c
+                      const seq = round.order ?? (["a", "b", "c"] as ("a" | "b" | "c")[]);
+                      return seq.map((id) => {
+                        const isWriter = round.writer ? id === round.writer : id === "c";
+                        const text = isWriter ? (round.summary || contribMap[id]) : contribMap[id];
+                        if (!text) return null;
+                        return (
+                          <details key={id} className="border border-gray-100 rounded-lg">
+                            <summary className="px-4 py-2.5 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
+                              <span>{labelMap[id]} — {isWriter ? "final report" : "contribution"}</span><span className="text-gray-300">▸ expand</span>
+                            </summary>
+                            <div className="px-4 pb-3 border-t border-gray-50"><p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line mt-2">{text}</p></div>
+                          </details>
+                        );
+                      });
+                    })()}
                   </div>
                 )}
 

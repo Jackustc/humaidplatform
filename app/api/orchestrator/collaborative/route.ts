@@ -76,6 +76,32 @@ export async function POST(req: NextRequest) {
   const requirements = userMessage && userMessage !== "No specific requirements." ? userMessage : "";
 
   try {
+    // ── Randomly choose which agent writes the FINAL report this run ─────────
+    // The writer must run LAST (it needs the others' work), but WHICH agent it
+    // is varies every run — nothing about the roles is fixed.
+    type Id = "a" | "b" | "c";
+    const ALL: Id[] = ["a", "b", "c"];
+    const LABEL: Record<Id, string> = { a: "Agent A", b: "Agent B", c: "Agent C" };
+    const ACTOR: Record<Id, LogEntry["actor"]> = { a: "agent_a", b: "agent_b", c: "agent_c" };
+    const shuffle = <T,>(arr: T[]): T[] => arr.map((v) => [Math.random(), v] as const).sort((x, y) => x[0] - y[0]).map(([, v]) => v);
+
+    const writer: Id = ALL[Math.floor(Math.random() * 3)];
+    const researchers = shuffle(ALL.filter((i) => i !== writer)); // two agents, random order
+    const order: Id[] = [...researchers, writer];                 // writer always last
+
+    // Runs an agent on the model bound to its label (A=GPT-5.5, B=DeepSeek, C=Groq)
+    async function runAgent(id: Id, system: string, user: string, timeoutMs: number): Promise<string> {
+      if (id === "a") {
+        const r = await client.chat.completions.create(
+          { model: "gpt-5.5", reasoning_effort: "none", messages: [{ role: "system", content: system }, { role: "user", content: user }] },
+          { timeout: timeoutMs }
+        );
+        return r.choices[0].message.content ?? "";
+      }
+      if (id === "b") return callDeepSeek([{ role: "system", content: system }, { role: "user", content: user }] as Msg[], 0.7, timeoutMs);
+      return callGroq([{ role: "system", content: system }, { role: "user", content: user }] as Msg[], 0.7, timeoutMs);
+    }
+
     // ── STEP 0: Orchestrator plans the pipeline (GPT-5.5) ────────────────────
     const planRes = await client.chat.completions.create({
       model: "gpt-5.5",
@@ -84,101 +110,89 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are the Main Orchestrator coordinating three AI agents (Agent A, Agent B, Agent C) who work in sequence to produce one industrial report on "${topic}". Agent A works first, then Agent B builds on A's work, then Agent C produces the final report.
+          content: `You are the Main Orchestrator coordinating three AI agents (Agent A, Agent B, Agent C) who work in sequence to produce one industrial report on "${topic}".
 
-Assign a clear, specific task to EACH agent. If the user assigned a specific role/instruction to any agent, you MUST use it exactly. For unassigned agents, decide the division of work yourself — there is NO fixed convention, so vary the roles based on the specific topic and the suggested strategy below. The only fixed rule is that Agent C produces the final report.
+For THIS run, the execution order is: ${order.map((i) => LABEL[i]).join(" → ")}. ${LABEL[writer]} works LAST and writes the FINAL report; the other two do the research/analysis groundwork first.
+
+Assign a clear, specific task to EACH agent that fits this order. If the user assigned a specific role/instruction to any agent, you MUST use it exactly. Otherwise vary the roles based on the topic and this suggested strategy: ${DIVISION_STRATEGIES[Math.floor(Math.random() * DIVISION_STRATEGIES.length)]}
 
 Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agentCTask": string }`,
         },
         {
           role: "user",
           content: isReRun
-            ? `Round ${round}. The user was not satisfied with the previous report:\n${previousSummary}\n\nUser feedback: "${userMessage}"\n\nRe-plan the three agents' tasks to address this feedback. Return JSON.`
-            : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nSuggested division strategy for this run (adapt it to the topic): ${DIVISION_STRATEGIES[Math.floor(Math.random() * DIVISION_STRATEGIES.length)]}\n\nAssign tasks to A, B, and C. Return JSON.`,
+            ? `Round ${round}. The user was not satisfied with the previous report:\n${previousSummary}\n\nUser feedback: "${userMessage}"\n\nRe-plan the three agents' tasks (execution order ${order.map((i) => LABEL[i]).join(" → ")}) to address this feedback. Return JSON.`
+            : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nAssign tasks to A, B, and C for the execution order ${order.map((i) => LABEL[i]).join(" → ")}. Return JSON.`,
         },
       ],
     }, { timeout: 30000 });
     const plan = safeParse(planRes.choices[0].message.content);
-    const taskA = plan.agentATask || `Research the key facts and themes for a report on "${topic}".`;
-    let taskB = plan.agentBTask || `Build on Agent A's work — find supporting evidence, sources, and analysis.`;
-    let taskC = plan.agentCTask || `Write the final professional industrial report using the work from Agent A and Agent B.`;
-    logs.push(log("orchestrator", "plan", plan.plan ?? "Dividing the work across the three agents."));
-    logs.push(log("orchestrator", "assignment", `Assigning to Agent A — ${taskA}`));
+    const tasks: Record<Id, string> = {
+      a: plan.agentATask || `Contribute to the report on "${topic}".`,
+      b: plan.agentBTask || `Contribute to the report on "${topic}".`,
+      c: plan.agentCTask || `Contribute to the report on "${topic}".`,
+    };
+    logs.push(log("orchestrator", "plan", plan.plan ?? `Dividing the work — execution order ${order.map((i) => LABEL[i]).join(" → ")}.`));
 
-    // ── STEP 1: Agent A executes its task (GPT-5.5) ──────────────────────────
-    const outputA = await client.chat.completions
-      .create({
-        model: "gpt-5.5",
-        reasoning_effort: "none",
-        messages: [
-          { role: "system", content: `You are Agent A, the first agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete your assigned task — focused and concise (under 250 words). Your output will be passed to Agent B. Return only your work, no preamble.` },
-          { role: "user", content: `Your assigned task: ${taskA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
-        ],
-      }, { timeout: 40000 })
-      .then((r) => r.choices[0].message.content ?? "")
-      .catch((e) => { throw new Error(`Agent A failed: ${e.message}`); });
-    logs.push(log("agent_a", "output", snippet(outputA)));
+    const outputs: Record<Id, string> = { a: "", b: "", c: "" };
 
-    // ── STEP 2: Orchestrator reviews A and finalises Agent B's task (GPT-5.5) ──
-    const reviewARes = await client.chat.completions.create({
-      model: "gpt-5.5",
-      reasoning_effort: "none",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "You are the Main Orchestrator. In one or two sentences, genuinely review Agent A's actual output below, then finalise Agent B's task. IMPORTANT: if the user assigned a specific role to Agent B, keep it exactly. Return JSON: { \"review\": string, \"agentBTask\": string }" },
-        { role: "user", content: `Agent A's task was: ${taskA}\n\nAgent A's actual output:\n${outputA}\n\nAgent B's planned task: ${taskB}${requirements ? `\nUser requirements (follow any Agent B instruction exactly): ${requirements}` : ""}\n\nReview A and finalise B's task. Return JSON.` },
-      ],
-    }, { timeout: 20000 });
-    const reviewA = safeParse(reviewARes.choices[0].message.content);
-    if (reviewA.agentBTask) taskB = reviewA.agentBTask;
-    logs.push(log("orchestrator", "review", reviewA.review || "Reviewed Agent A's work. Passing to Agent B."));
-    logs.push(log("orchestrator", "assignment", `Assigning to Agent B — ${taskB}`));
+    // ── Execute the two researchers, then the writer, with live reviews ──────
+    for (let step = 0; step < order.length; step++) {
+      const id = order[step];
+      const isWriter = id === writer;
+      const priorWork = order.slice(0, step).map((p) => `${LABEL[p]}'s contribution:\n${outputs[p]}`).join("\n\n");
 
-    // ── STEP 3: Agent B executes its task using A's output (DeepSeek) ────────
-    const outputB = await callDeepSeek([
-      { role: "system", content: `You are Agent B, the second agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Build on Agent A's work to complete your assigned task. Be focused and concise (under 250 words). Where relevant, reference real, named industry sources (e.g. McKinsey, Deloitte, Gartner, World Economic Forum, named companies/reports) with approximate years so the final report can cite them. Your output will be passed to Agent C. Return only your work, no preamble.` },
-      { role: "user", content: `Your assigned task: ${taskB}\n\nAgent A's work so far:\n${outputA}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}` },
-    ] as Msg[], 0.7, 16000)
-      .catch((e) => { throw new Error(`Agent B failed: ${e.message}`); });
-    logs.push(log("agent_b", "output", snippet(outputB)));
+      logs.push(log("orchestrator", "assignment", `Assigning to ${LABEL[id]} — ${tasks[id]}`));
 
-    // ── STEP 4: Orchestrator reviews B and finalises Agent C's task (GPT-5.5) ──
-    const reviewBRes = await client.chat.completions.create({
-      model: "gpt-5.5",
-      reasoning_effort: "none",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "You are the Main Orchestrator. In one or two sentences, genuinely review Agent B's actual output below, then finalise Agent C's task. Agent C produces the FINAL report. IMPORTANT: if the user assigned a specific role to Agent C, keep it exactly. Return JSON: { \"review\": string, \"agentCTask\": string }" },
-        { role: "user", content: `Agent B's task was: ${taskB}\n\nAgent B's actual output:\n${outputB}\n\nAgent C's planned task: ${taskC}${requirements ? `\nUser requirements (follow any Agent C instruction exactly): ${requirements}` : ""}${isReRun ? `\nThis is a revision — user feedback: "${userMessage}"` : ""}\n\nReview B and finalise C's task. Return JSON.` },
-      ],
-    }, { timeout: 20000 });
-    const reviewB = safeParse(reviewBRes.choices[0].message.content);
-    if (reviewB.agentCTask) taskC = reviewB.agentCTask;
-    logs.push(log("orchestrator", "review", reviewB.review || "Reviewed Agent B's work. Passing to Agent C."));
-    logs.push(log("orchestrator", "assignment", `Assigning to Agent C — ${taskC}`));
-
-    // ── STEP 5: Agent C produces the final report (Groq) ─────────────────────
-    const summary = await callGroq([
-      { role: "system", content: `You are Agent C, the final agent in a 3-agent collaborative pipeline. Using the work from Agent A and Agent B, produce the FINAL industrial report on "${topic}". Write in clear, professional prose with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers).
+      let system: string;
+      let user: string;
+      if (isWriter) {
+        system = `You are ${LABEL[id]}, the final agent in a 3-agent collaborative pipeline. Using your teammates' work, produce the FINAL industrial report on "${topic}". Write in clear, professional prose with in-text citations in Author (Year) format. Do NOT use memo or letter format (no To:/From:/Date: headers).
 
 CRITICAL CITATION RULES:
 - NEVER cite "Agent A", "Agent B", or "Agent C" as a source. They are your teammates, not references.
-- Cite only the real organizations, companies, reports, or authors that appear within Agent A's and Agent B's contributions (e.g. McKinsey, Deloitte, Siemens, Gartner, World Economic Forum, etc.).
-- End with a "References" section listing each cited real source in APA format, one per line. Do not include any entry that refers to an Agent.` },
-      { role: "user", content: `Your assigned task: ${taskC}\n\nAgent A's contribution:\n${outputA}\n\nAgent B's contribution:\n${outputB}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) with in-text citations to the REAL sources mentioned above (never to "Agent A/B/C"), followed by the References section. Return ONLY the report and references.` },
-    ] as Msg[], 0.7, 15000)
-      .catch((e) => { throw new Error(`Agent C failed: ${e.message}`); });
-    logs.push(log("agent_c", "output", `Final report drafted (${summary.split(/\s+/).length} words).`));
+- Cite only the real organizations, companies, reports, or authors mentioned in the teammates' contributions (e.g. McKinsey, Deloitte, Siemens, Gartner, World Economic Forum, etc.).
+- End with a "References" section listing each cited real source in APA format, one per line. Never list an Agent as a reference.`;
+        user = `Your assigned task: ${tasks[id]}\n\n${priorWork}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}\n\nWrite the final report (~400 words) with in-text citations to the REAL sources mentioned above, followed by the References section. Return ONLY the report and references.`;
+      } else {
+        system = `You are ${LABEL[id]}, a contributing agent in a 3-agent collaborative pipeline producing an industrial report on "${topic}". Complete your assigned task — focused and concise (under 250 words). Where relevant, reference real, named industry sources (e.g. McKinsey, Deloitte, Gartner, World Economic Forum) with approximate years so the final report can cite them. Your output will be passed to the next agent. Return only your work, no preamble.`;
+        user = `Your assigned task: ${tasks[id]}${priorWork ? `\n\nWork so far from your teammates:\n${priorWork}` : ""}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}`;
+      }
 
-    // ── STEP 6: Orchestrator writes the completion message (GPT-5.5) ─────────
+      const out = await runAgent(id, system, user, isWriter ? 25000 : 18000)
+        .catch((e) => { throw new Error(`${LABEL[id]} failed: ${e.message}`); });
+      outputs[id] = out;
+      logs.push(log(ACTOR[id], "output", isWriter ? `Final report drafted (${out.split(/\s+/).length} words).` : snippet(out)));
+
+      // Orchestrator reviews each non-final output before handing off (GPT-5.5)
+      if (!isWriter) {
+        const next = order[step + 1];
+        const reviewRes = await client.chat.completions.create({
+          model: "gpt-5.5",
+          reasoning_effort: "none",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: `You are the Main Orchestrator. In one or two sentences, genuinely review ${LABEL[id]}'s actual output below, then optionally refine ${LABEL[next]}'s task. IMPORTANT: if the user assigned a specific role to ${LABEL[next]}, keep it exactly. Return JSON: { "review": string, "nextTask": string }` },
+            { role: "user", content: `${LABEL[id]}'s task was: ${tasks[id]}\n\n${LABEL[id]}'s actual output:\n${out}\n\n${LABEL[next]}'s planned task: ${tasks[next]}${requirements ? `\nUser requirements (follow any ${LABEL[next]} instruction exactly): ${requirements}` : ""}\n\nReview and finalise ${LABEL[next]}'s task. Return JSON.` },
+          ],
+        }, { timeout: 18000 });
+        const review = safeParse(reviewRes.choices[0].message.content);
+        if (review.nextTask) tasks[next] = review.nextTask;
+        logs.push(log("orchestrator", "review", review.review || `Reviewed ${LABEL[id]}'s work. Passing to ${LABEL[next]}.`));
+      }
+    }
+
+    const summary = outputs[writer];
+
+    // ── Orchestrator completion message (GPT-5.5) ────────────────────────────
     const finalRes = await client.chat.completions.create({
       model: "gpt-5.5",
       reasoning_effort: "none",
       messages: [
-        { role: "system", content: "You are the Main Orchestrator. In 2 sentences, summarise to the user how the three agents collaborated to produce this report. Be professional and specific to what each agent did." },
-        { role: "user", content: `Agent A task: ${taskA}\nAgent B task: ${taskB}\nAgent C task: ${taskC}\nFinal report length: ${summary.split(/\s+/).length} words. Write the completion message.` },
+        { role: "system", content: "You are the Main Orchestrator. In 2 sentences, summarise to the user how the three agents collaborated to produce this report. Be specific to what each agent did and who wrote the final report." },
+        { role: "user", content: `Execution order: ${order.map((i) => LABEL[i]).join(" → ")} (${LABEL[writer]} wrote the final report).\nAgent A task: ${tasks.a}\nAgent B task: ${tasks.b}\nAgent C task: ${tasks.c}\nFinal report length: ${summary.split(/\s+/).length} words. Write the completion message.` },
       ],
-    }, { timeout: 20000 });
+    }, { timeout: 18000 });
     const finalMessage = finalRes.choices[0].message.content ?? "The three agents have collaborated to produce your report. Please review it below.";
     logs.push(log("orchestrator", "final", finalMessage));
 
@@ -186,8 +200,10 @@ CRITICAL CITATION RULES:
       success: true,
       logs,
       summary,
-      tasks: { agentA: taskA, agentB: taskB, agentC: taskC },
-      contributions: { agentA: outputA, agentB: outputB },
+      writer,
+      order,
+      tasks: { agentA: tasks.a, agentB: tasks.b, agentC: tasks.c },
+      contributions: { agentA: outputs.a, agentB: outputs.b, agentC: outputs.c },
       orchestratorMessage: finalMessage,
       round,
     });

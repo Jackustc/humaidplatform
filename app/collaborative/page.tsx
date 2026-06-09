@@ -19,8 +19,10 @@ type Round = {
   userMessage: string;
   logs: LogEntry[];
   summary: string;
-  contributions?: { agentA: string; agentB: string };
+  contributions?: { agentA: string; agentB: string; agentC?: string };
   tasks?: { agentA: string; agentB: string; agentC: string };
+  writer?: "a" | "b" | "c";
+  order?: ("a" | "b" | "c")[];
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
@@ -181,6 +183,8 @@ export default function CollaborativePage() {
         summary: data.summary ?? "",
         contributions: data.contributions,
         tasks: data.tasks,
+        writer: data.writer,
+        order: data.order,
       };
       setRounds((prev) => [...prev, round]);
       setCurrentRound(round);
@@ -228,10 +232,11 @@ export default function CollaborativePage() {
   async function handleSubmit() {
     submittingRef.current = true;
     const provenanceSources = [
-      { id: "agent_c_summary", text: originalSummary },
+      { id: "final_report", text: originalSummary },
       ...(currentRound?.contributions ? [
         { id: "agent_a_contribution", text: currentRound.contributions.agentA },
         { id: "agent_b_contribution", text: currentRound.contributions.agentB },
+        { id: "agent_c_contribution", text: currentRound.contributions.agentC ?? "" },
       ] : []),
     ];
     const provenanceSpans = computeProvenance(finalText, provenanceSources);
@@ -261,6 +266,8 @@ export default function CollaborativePage() {
         tasks: r.tasks,
         contributions: r.contributions,
         summary: r.summary,
+        writer: r.writer,
+        order: r.order,
       })),
       events: getEvents(),
     };
@@ -514,7 +521,7 @@ export default function CollaborativePage() {
               <div ref={reportPanelRef} className="border border-gray-200 rounded-lg overflow-hidden mb-4">
                 <div className="px-5 py-4 border-b border-gray-100">
                   <p className="font-medium text-gray-900 text-sm">Your Report</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Produced by Agent C and reviewed by the Orchestrator. Edit before submitting.</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Produced by {currentRound.writer ? `Agent ${currentRound.writer.toUpperCase()}` : "the final agent"} and reviewed by the Orchestrator. Edit before submitting.</p>
                 </div>
                 <div className="p-5">
                   <textarea
