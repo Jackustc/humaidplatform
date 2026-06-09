@@ -203,8 +203,11 @@ CRITICAL CITATION RULES:
       round,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Orchestration failed";
-    console.error("[collaborative orchestrator]", message);
+    let message = "Orchestration failed";
+    if (err instanceof Error && typeof err.message === "string") message = err.message;
+    else if (typeof err === "string") message = err;
+    else if (err) { try { message = JSON.stringify(err); } catch { /* keep default */ } }
+    console.error("[collaborative orchestrator]", message, err);
     return NextResponse.json({ error: message, logs }, { status: 500 });
   }
 }

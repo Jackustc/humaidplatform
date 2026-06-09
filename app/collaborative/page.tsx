@@ -171,7 +171,14 @@ export default function CollaborativePage() {
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         let errMsg = `Server error (HTTP ${res.status})`;
-        try { const j = JSON.parse(text); errMsg = j.error ?? errMsg; } catch {}
+        try {
+          const j = JSON.parse(text);
+          const e = j.error ?? j.message;
+          if (typeof e === "string") errMsg = e;
+          else if (e && typeof e === "object") errMsg = (e as { message?: string }).message ?? JSON.stringify(e);
+        } catch {
+          if (text) errMsg = text.slice(0, 200);
+        }
         throw new Error(errMsg);
       }
       const data = await res.json();
