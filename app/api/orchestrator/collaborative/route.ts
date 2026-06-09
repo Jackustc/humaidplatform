@@ -184,16 +184,11 @@ CRITICAL CITATION RULES:
 
     const summary = outputs[writer];
 
-    // ── Orchestrator completion message (GPT-5.5) ────────────────────────────
-    const finalRes = await client.chat.completions.create({
-      model: "gpt-5.5",
-      reasoning_effort: "none",
-      messages: [
-        { role: "system", content: "You are the Main Orchestrator. In 2 sentences, summarise to the user how the three agents collaborated to produce this report. Be specific to what each agent did and who wrote the final report." },
-        { role: "user", content: `Execution order: ${order.map((i) => LABEL[i]).join(" → ")} (${LABEL[writer]} wrote the final report).\nAgent A task: ${tasks.a}\nAgent B task: ${tasks.b}\nAgent C task: ${tasks.c}\nFinal report length: ${summary.split(/\s+/).length} words. Write the completion message.` },
-      ],
-    }, { timeout: 18000 });
-    const finalMessage = finalRes.choices[0].message.content ?? "The three agents have collaborated to produce your report. Please review it below.";
+    // ── Orchestrator completion message (built from this run's real data) ────
+    // Derived from the actual execution order/writer rather than an extra LLM
+    // call, to keep the sequential pipeline within the serverless time limit.
+    const researcherLabels = order.filter((i) => i !== writer).map((i) => LABEL[i]);
+    const finalMessage = `${researcherLabels.join(" and ")} carried out the research and analysis, and ${LABEL[writer]} synthesised their work into the final ${summary.split(/\s+/).length}-word report. Please review it below.`;
     logs.push(log("orchestrator", "final", finalMessage));
 
     return NextResponse.json({
