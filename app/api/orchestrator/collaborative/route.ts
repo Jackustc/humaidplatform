@@ -125,7 +125,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
             : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nAssign tasks to A, B, and C for the execution order ${order.map((i) => LABEL[i]).join(" → ")}. Return JSON.`,
         },
       ],
-    }, { timeout: 30000 });
+    }, { timeout: 15000 });
     const plan = safeParse(planRes.choices[0].message.content);
     const tasks: Record<Id, string> = {
       a: plan.agentATask || `Contribute to the report on "${topic}".`,
@@ -159,7 +159,7 @@ CRITICAL CITATION RULES:
         user = `Your assigned task: ${tasks[id]}${priorWork ? `\n\nWork so far from your teammates:\n${priorWork}` : ""}${requirements ? `\n\nOverall user requirements: ${requirements}` : ""}`;
       }
 
-      const out = await runAgent(id, system, user, isWriter ? 25000 : 18000)
+      const out = await runAgent(id, system, user, isWriter ? 18000 : 13000)
         .catch((e) => { throw new Error(`${LABEL[id]} failed: ${e.message}`); });
       outputs[id] = out;
       logs.push(log(ACTOR[id], "output", isWriter ? `Final report drafted (${out.split(/\s+/).length} words).` : snippet(out)));
@@ -175,7 +175,7 @@ CRITICAL CITATION RULES:
             { role: "system", content: `You are the Main Orchestrator. In one or two sentences, genuinely review ${LABEL[id]}'s actual output below, then optionally refine ${LABEL[next]}'s task. IMPORTANT: if the user assigned a specific role to ${LABEL[next]}, keep it exactly. Return JSON: { "review": string, "nextTask": string }` },
             { role: "user", content: `${LABEL[id]}'s task was: ${tasks[id]}\n\n${LABEL[id]}'s actual output:\n${out}\n\n${LABEL[next]}'s planned task: ${tasks[next]}${requirements ? `\nUser requirements (follow any ${LABEL[next]} instruction exactly): ${requirements}` : ""}\n\nReview and finalise ${LABEL[next]}'s task. Return JSON.` },
           ],
-        }, { timeout: 18000 });
+        }, { timeout: 9000 });
         const review = safeParse(reviewRes.choices[0].message.content);
         if (review.nextTask) tasks[next] = review.nextTask;
         logs.push(log("orchestrator", "review", review.review || `Reviewed ${LABEL[id]}'s work. Passing to ${LABEL[next]}.`));
