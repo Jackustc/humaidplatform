@@ -43,7 +43,7 @@ export default function LoginPage() {
               onKeyDown={handleKeyDown}
               autoFocus
               placeholder="e.g., 686A9312ED364DD58027EE60BDA4XXXX"
-              style={{ width: "calc(38ch + 1.5rem)" }}
+              style={{ width: "calc(40ch + 1.5rem)" }}
               className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-700 focus:outline-none focus:border-gray-400 transition-colors"
             />
           </div>
