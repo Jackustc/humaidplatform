@@ -43,16 +43,16 @@ export default function TaskPage() {
           </p>
           <div className="space-y-2 mb-6 text-xs text-gray-500 dark:text-gray-400 flex-1">
             <div className="flex items-start gap-2">
-              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">A.</span>
-              <span>Agent A collects relevant data and sources</span>
+              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">1.</span>
+              <span>The Orchestrator assigns each agent a task based on your prompt — roles are not fixed</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">B.</span>
-              <span>Agent B performs analysis and statistics on that data</span>
+              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">2.</span>
+              <span>The agents work in sequence, each building on the previous one's output</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">C.</span>
-              <span>Agent C writes the final summary, which you review and edit</span>
+              <span className="font-mono text-gray-400 dark:text-gray-600 w-4 flex-shrink-0">3.</span>
+              <span>The final agent produces the report, which you review and edit</span>
             </div>
           </div>
           <button
