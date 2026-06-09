@@ -202,8 +202,22 @@ export default function SubmitPage() {
       ? Math.round((new Date(data.endTime).getTime() - new Date(data.startTime).getTime()) / 1000)
       : null;
 
+    const rows: { label: string; value: React.ReactNode; mono?: boolean }[] = [
+      { label: "Mode", value: <span className="capitalize">{data.mode}</span> },
+      ...(data.selectedAgentName ? [{ label: "Selected agent", value: data.selectedAgentName }] : []),
+      { label: "Confidence rating", value: `${rating} / 5` },
+      { label: "Response edited", value: data.wasEdited ? "Yes" : "No" },
+      ...(data.wasEdited && data.charsAdded != null
+        ? [{ label: "Characters added / removed", value: `+${data.charsAdded} / -${data.charsRemoved}` }]
+        : []),
+      ...(durationSec !== null
+        ? [{ label: "Duration", value: durationSec < 60 ? `${durationSec}s` : `${Math.round(durationSec / 60)}m` }]
+        : []),
+      { label: "Session ID", value: data.sessionId, mono: true },
+    ];
+
     return (
-      <div className="max-w-sm mx-auto py-10">
+      <div className="max-w-md mx-auto py-10">
         <div className="mb-5 text-center" style={{ textAlign: "center" }}>
           <div className="w-9 h-9 border-2 border-gray-900 rounded-full flex items-center justify-center mb-4 mx-auto">
             <svg className="w-4 h-4 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,43 +228,26 @@ export default function SubmitPage() {
           <p className="text-sm text-gray-500">Thank you for participating in this study.</p>
         </div>
 
-        <div className="border border-gray-200 rounded-lg p-4 text-sm space-y-1.5 mb-5">
-          <div className="flex justify-between">
-            <span className="text-gray-400 text-xs">Mode</span>
-            <span className="text-xs font-medium capitalize">{data.mode}</span>
+        <div className="border border-gray-200 rounded-lg overflow-hidden mb-5">
+          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-widest">Session Summary</p>
           </div>
-          {data.selectedAgentName && (
-            <div className="flex justify-between">
-              <span className="text-gray-400 text-xs">Selected agent</span>
-              <span className="text-xs font-medium">{data.selectedAgentName}</span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-gray-400 text-xs">Confidence rating</span>
-            <span className="text-xs font-medium">{rating} / 5</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400 text-xs">Response edited</span>
-            <span className="text-xs font-medium">{data.wasEdited ? "Yes" : "No"}</span>
-          </div>
-          {data.wasEdited && data.charsAdded != null && (
-            <div className="flex justify-between">
-              <span className="text-gray-400 text-xs">Characters added / removed</span>
-              <span className="text-xs font-medium">+{data.charsAdded} / -{data.charsRemoved}</span>
-            </div>
-          )}
-          {durationSec !== null && (
-            <div className="flex justify-between">
-              <span className="text-gray-400 text-xs">Duration</span>
-              <span className="text-xs font-medium">
-                {durationSec < 60 ? `${durationSec}s` : `${Math.round(durationSec / 60)}m`}
-              </span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-gray-400 text-xs">Session ID</span>
-            <span className="text-xs font-mono text-gray-500">{data.sessionId}</span>
-          </div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left px-4 py-2 font-medium text-gray-400">Field</th>
+                <th className="text-left px-4 py-2 font-medium text-gray-400">Value</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {rows.map((r) => (
+                <tr key={r.label}>
+                  <td className="text-left px-4 py-2.5 text-gray-500 align-top">{r.label}</td>
+                  <td className={`text-left px-4 py-2.5 font-medium text-gray-800 align-top break-all ${r.mono ? "font-mono text-gray-500 font-normal" : ""}`}>{r.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
       </div>
