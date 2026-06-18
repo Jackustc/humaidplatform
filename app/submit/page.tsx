@@ -169,17 +169,27 @@ export default function SubmitPage() {
     if (!allAnswered) return;
     setIsSubmitting(true);
     const demographics = sessionStorage.getItem("humaid_demographics");
+    const participantId = sessionStorage.getItem("humaid_participant_id");
+    const assignmentId = sessionStorage.getItem("humaid_assignment_id");
+    const projectId = sessionStorage.getItem("humaid_project_id");
     try {
-      await fetch("/api/log", {
+      const res = await fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
+          participantId,
+          assignmentId,
+          projectId,
           confidenceRating: rating,
           postTaskSurvey: likert,
           demographics: demographics ? JSON.parse(demographics) : null,
         }),
       });
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        console.error("[submit] Log rejected:", j);
+      }
     } catch (err) {
       // Non-critical
       console.error("[submit] Failed to log session:", err);
