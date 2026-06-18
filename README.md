@@ -4,9 +4,8 @@
 
 A research platform studying how people interact with multiple AI agents when completing academic tasks. Participants complete a literature review using AI agents in one of two interaction modes. Every interaction is logged and available to researchers through a password-protected admin dashboard.
 
-Live platform: https://humaidplatform.vercel.app
+Live platform: NA
 
-GitHub repository: https://github.com/kanadmotiwale/humaidplatform
 
 ---
 
