@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TASK } from "@/lib/data";
 import { logEvent, getEvents } from "@/lib/event-logger";
 import { computeProvenance, summariseProvenance } from "@/lib/provenance";
+import { editDistance, wordDelta } from "@/lib/edit-distance";
 
 type LogEntry = {
   id: string;
@@ -22,6 +23,8 @@ type AgentOutput = {
   critique: string;
 };
 
+type ModelRouting = Record<string, { provider: string; model: string }>;
+
 type Round = {
   roundNumber: number;
   userMessage: string;
@@ -30,6 +33,9 @@ type Round = {
   finalVersion: string;
   coordinatorDecision: string;
   coordinatorRationale: string;
+  modelRouting?: ModelRouting;
+  apiLatencyMs?: { perCall: number[]; total: number };
+  apiErrorCount?: number;
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
@@ -183,6 +189,10 @@ export default function CompetitivePage() {
   const timer = useTimer();
   const submittingRef = useRef(false);
   const editDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Accumulated time each agent panel has been open (keyed by agent id), and the
+  // timestamp at which each currently-open panel was expanded.
+  const agentViewMsRef = useRef<Record<number, number>>({});
+  const agentOpenAtRef = useRef<Record<number, number>>({});
 
   const [phase, setPhase] = useState<"brief" | "running" | "complete">("brief");
   const [userBrief, setUserBrief] = useState("");
@@ -203,6 +213,8 @@ export default function CompetitivePage() {
   const [expandedAgents, setExpandedAgents] = useState<Set<number>>(new Set());
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [actualTask, setActualTask] = useState(TASK.topic);
+  const [taskWasCustomized, setTaskWasCustomized] = useState(false);
 
   useEffect(() => {
     logEvent("session_start", { mode: "competitive" });
@@ -246,6 +258,9 @@ export default function CompetitivePage() {
         finalVersion: data.finalVersion ?? "",
         coordinatorDecision: data.coordinatorDecision ?? "",
         coordinatorRationale: data.coordinatorRationale ?? "",
+        modelRouting: data.modelRouting,
+        apiLatencyMs: data.apiLatencyMs,
+        apiErrorCount: data.apiErrorCount,
       };
       setRounds((prev) => [...prev, round]);
       setCurrentRound(round);
@@ -267,6 +282,16 @@ export default function CompetitivePage() {
 
   function handleStart() {
     const taskInput = userTask.trim() || TASK.topic;
+    setActualTask(taskInput);
+    setTaskWasCustomized(
+      Boolean(
+        userTask.trim() ||
+        preferences.trim() ||
+        agentAInstruction.trim() ||
+        agentBInstruction.trim() ||
+        agentCInstruction.trim()
+      )
+    );
     const combinedMessage = [
       preferences.trim(),
       agentAInstruction.trim() ? `Agent A instructions: ${agentAInstruction.trim()}` : "",
@@ -293,7 +318,33 @@ export default function CompetitivePage() {
   }
 
   function toggleAgent(id: number) {
-    setExpandedAgents((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setExpandedAgents((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) {
+        // Closing — accumulate the time this panel was open.
+        s.delete(id);
+        const openedAt = agentOpenAtRef.current[id];
+        if (openedAt) {
+          agentViewMsRef.current[id] = (agentViewMsRef.current[id] ?? 0) + (Date.now() - openedAt);
+          delete agentOpenAtRef.current[id];
+        }
+      } else {
+        // Opening — start the timer.
+        s.add(id);
+        agentOpenAtRef.current[id] = Date.now();
+      }
+      return s;
+    });
+  }
+
+  // Add any still-open panels' elapsed time into the accumulator (called at submit).
+  function flushAgentViewTimes() {
+    const now = Date.now();
+    for (const [idStr, openedAt] of Object.entries(agentOpenAtRef.current)) {
+      const id = Number(idStr);
+      agentViewMsRef.current[id] = (agentViewMsRef.current[id] ?? 0) + (now - openedAt);
+    }
+    agentOpenAtRef.current = {};
   }
 
   function handleSelectAgent(agent: AgentOutput) {
@@ -321,12 +372,48 @@ export default function CompetitivePage() {
       ? (currentRound?.agentOutputs.find(a => a.id === selectedAgentId)?.name ?? null)
       : null;
 
+    // ── Assemble the data-quality fields for the session record ──────────────
+    flushAgentViewTimes();
+    const startedAt = sessionStorage.getItem("humaid_start_time");
+    const completedAt = new Date().toISOString();
+    const totalDurationMs = startedAt
+      ? new Date(completedAt).getTime() - new Date(startedAt).getTime()
+      : 0;
+    const timeOnInstructionsMs = Number(sessionStorage.getItem("humaid_time_on_instructions_ms")) || null;
+    const allLatencies = rounds.flatMap((r) => r.apiLatencyMs?.perCall ?? []);
+    const apiLatencyMs = { perCall: allLatencies, total: allLatencies.reduce((a, b) => a + b, 0) };
+    const apiErrorCount = rounds.reduce((a, r) => a + (r.apiErrorCount ?? 0), 0);
+    const agentDisplayOrder = (currentRound?.agentOutputs ?? []).map((a) => a.name);
+    const timeViewingEachAgentMs: Record<string, number> = {};
+    for (const a of currentRound?.agentOutputs ?? []) {
+      timeViewingEachAgentMs[a.name] = agentViewMsRef.current[a.id] ?? 0;
+    }
+
     const sessionData = {
       sessionId: sessionStorage.getItem("humaid_session_id"),
       mode: "competitive",
       task: TASK.topic,
+      // Data-quality schema fields
+      conditionAssignmentMethod: "manual_choice",
+      actualTask,
+      taskWasCustomized,
+      agentDisplayOrder,
+      modelRouting: currentRound?.modelRouting ?? null,
+      startedAt,
+      completedAt,
+      totalDurationMs,
+      timeOnInstructionsMs,
+      timeViewingEachAgentMs,
+      editDistance: editDistance(originalFinal, finalText),
+      wordDelta: wordDelta(originalFinal, finalText),
+      rerunCount: Math.max(0, rounds.length - 1),
+      // Kept the orchestrator's recommended version (didn't pick a different agent).
+      acceptedCoordinatorRecommendation: selectedAgentId === null,
+      apiLatencyMs,
+      apiErrorCount,
+      // Existing fields
       startTime: sessionStorage.getItem("humaid_start_time"),
-      endTime: new Date().toISOString(),
+      endTime: completedAt,
       totalRounds: rounds.length,
       coordinatorDecision: currentRound?.coordinatorDecision,
       selectedAgent: selectedAgentId,

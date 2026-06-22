@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { gateParticipant, markCompleted } from "@/lib/participant-gate";
+import { SCHEMA_VERSION, APP_VERSION, PROMPT_VERSION } from "@/lib/versions";
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
@@ -27,7 +28,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const entry = { ...body, loggedAt: new Date().toISOString() };
+  // Version stamps are applied server-side (authoritative) so they can't be
+  // spoofed by the client and always reflect the deployed build.
+  const entry = {
+    ...body,
+    schemaVersion: SCHEMA_VERSION,
+    appVersion: APP_VERSION,
+    promptVersion: PROMPT_VERSION,
+    loggedAt: new Date().toISOString(),
+  };
   console.log("[humaid/log]", body.sessionId);
 
   try {

@@ -43,12 +43,35 @@ const SESSION_HEADERS = [
   "Confidence (1-5)", "Trust (1-5)", "Difficulty (1-5)", "Satisfaction (1-5)", "Effort (1-5)",
   "Age Range", "Education", "AI Familiarity", "Field of Study",
   "Agent Chars (provenance)", "User Chars (provenance)",
+  // ── Data-quality schema fields ──
+  "Schema Version", "App Version", "Prompt Version", "Condition Assignment",
+  "Participant ID", "Assignment ID", "Project ID",
+  "Actual Task", "Task Customized", "Agent Display Order", "Model Routing",
+  "Started At", "Completed At", "Total Duration (ms)", "Time on Instructions (ms)",
+  "Time Viewing Each Agent (ms)", "Edit Distance", "Word Delta", "Rerun Count",
+  "Accepted Coordinator Rec", "API Latency Total (ms)", "API Error Count",
 ];
+
+/** Render a value that may be an object/array into a compact string for a cell. */
+function jsonCell(v: unknown): string {
+  if (v == null) return "";
+  if (Array.isArray(v)) return v.join(", ");
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+
+/** Boolean | null → Yes / No / N/A for spreadsheet readability. */
+function yesNo(v: unknown): string {
+  if (v === true) return "Yes";
+  if (v === false) return "No";
+  return "N/A";
+}
 
 function buildSessionRow(s: Record<string, unknown>): (string | number)[] {
   const survey = (s.postTaskSurvey  ?? {}) as Record<string, number>;
   const demo   = (s.demographics    ?? {}) as Record<string, string>;
   const prov   = (s.provenanceSummary ?? {}) as Record<string, number>;
+  const latency = (s.apiLatencyMs   ?? {}) as { total?: number };
   const agentChars = Object.entries(prov).filter(([k]) => k !== "user_typed").reduce((a, [, v]) => a + v, 0);
   const rounds = Array.isArray(s.rounds) ? s.rounds.length : 1;
   return [
@@ -60,6 +83,18 @@ function buildSessionRow(s: Record<string, unknown>): (string | number)[] {
     Number(survey.satisfaction ?? ""), Number(survey.effort ?? ""),
     demo.ageRange ?? "", demo.education ?? "", demo.aiFamiliarity ?? "", demo.fieldOfStudy ?? "",
     agentChars, Number(prov["user_typed"] ?? 0),
+    // ── Data-quality schema fields ──
+    String(s.schemaVersion ?? ""), String(s.appVersion ?? ""), String(s.promptVersion ?? ""),
+    String(s.conditionAssignmentMethod ?? ""),
+    String(s.participantId ?? ""), String(s.assignmentId ?? ""), String(s.projectId ?? ""),
+    String(s.actualTask ?? ""), yesNo(s.taskWasCustomized),
+    jsonCell(s.agentDisplayOrder), jsonCell(s.modelRouting),
+    fmtDate(s.startedAt), fmtDate(s.completedAt), Number(s.totalDurationMs ?? ""),
+    s.timeOnInstructionsMs == null ? "" : Number(s.timeOnInstructionsMs),
+    jsonCell(s.timeViewingEachAgentMs),
+    Number(s.editDistance ?? ""), Number(s.wordDelta ?? ""), Number(s.rerunCount ?? ""),
+    yesNo(s.acceptedCoordinatorRecommendation),
+    Number(latency.total ?? ""), Number(s.apiErrorCount ?? ""),
   ];
 }
 
@@ -174,9 +209,8 @@ export async function GET(req: Request) {
       // Sheet 1 — Sessions
       const sessionRows = sessions.map(buildSessionRow);
       const ws1 = XLSX.utils.aoa_to_sheet([SESSION_HEADERS, ...sessionRows]);
-      // Set column widths
-      ws1["!cols"] = [20, 18, 14, 14, 8, 10, 10, 12, 14, 14, 10, 10, 12, 8, 10, 16, 20, 16, 18, 18]
-        .map((wch) => ({ wch }));
+      // Column widths sized to each header (keeps in sync as columns are added).
+      ws1["!cols"] = SESSION_HEADERS.map((h) => ({ wch: Math.max(12, Math.min(40, h.length + 4)) }));
       XLSX.utils.book_append_sheet(wb, ws1, "Sessions");
 
       // Sheet 2 — Conversation Log

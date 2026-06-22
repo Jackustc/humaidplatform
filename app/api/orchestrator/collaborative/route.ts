@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { checkEnv } from "@/lib/env";
-import { callDeepSeek, callGroq, Msg } from "@/lib/api-helpers";
+import { callDeepSeek, callGroq, createMetrics, trackCall, summariseMetrics, Msg } from "@/lib/api-helpers";
 checkEnv();
 
 export const maxDuration = 300;
+
+// Which provider/model serves each agent in this mode (logged as modelRouting).
+const MODEL_ROUTING = {
+  a: { provider: "openai", model: "gpt-5.5" },
+  b: { provider: "deepseek", model: "deepseek-chat" },
+  c: { provider: "groq", model: "llama-3.3-70b-versatile" },
+};
 
 // Orchestrator uses GPT-5.5 (needs reliable JSON mode)
 // maxRetries: 0 — auto-retry doubles latency on a sequential pipeline, which we can't afford.
@@ -74,6 +81,7 @@ export async function POST(req: NextRequest) {
   const logs: LogEntry[] = [];
   const isReRun = round > 1 && previousSummary;
   const requirements = userMessage && userMessage !== "No specific requirements." ? userMessage : "";
+  const metrics = createMetrics();
 
   try {
     // ── Randomly choose which agent writes the FINAL report this run ─────────
@@ -103,7 +111,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── STEP 0: Orchestrator plans the pipeline (GPT-5.5) ────────────────────
-    const planRes = await client.chat.completions.create({
+    const planRes = await trackCall(metrics, () => client.chat.completions.create({
       model: "gpt-5.5",
       reasoning_effort: "none",
       response_format: { type: "json_object" },
@@ -125,7 +133,7 @@ Return JSON: { "plan": string, "agentATask": string, "agentBTask": string, "agen
             : `Report topic: "${topic}".\n\nUser requirements / role assignments: "${requirements || "None — you decide how to divide the work."}"\n\nAssign tasks to A, B, and C for the execution order ${order.map((i) => LABEL[i]).join(" → ")}. Return JSON.`,
         },
       ],
-    }, { timeout: 15000 });
+    }, { timeout: 15000 }), 0);
     const plan = safeParse(planRes.choices[0].message.content);
     const tasks: Record<Id, string> = {
       a: plan.agentATask || `Contribute to the report on "${topic}".`,
@@ -161,7 +169,7 @@ CRITICAL CITATION RULES:
 
       // GPT-5.5 (Agent A) needs more headroom than the faster DeepSeek/Groq agents
       const agentTimeout = id === "a" ? 30000 : 20000;
-      const out = await runAgent(id, system, user, agentTimeout)
+      const out = await trackCall(metrics, () => runAgent(id, system, user, agentTimeout), 0)
         .catch((e) => { throw new Error(`${LABEL[id]} failed: ${e.message}`); });
       outputs[id] = out;
       logs.push(log(ACTOR[id], "output", isWriter ? `Final report drafted (${out.split(/\s+/).length} words).` : snippet(out)));
@@ -191,6 +199,8 @@ CRITICAL CITATION RULES:
       tasks: { agentA: tasks.a, agentB: tasks.b, agentC: tasks.c },
       contributions: { agentA: outputs.a, agentB: outputs.b, agentC: outputs.c },
       orchestratorMessage: finalMessage,
+      modelRouting: MODEL_ROUTING,
+      ...summariseMetrics(metrics),
       round,
     });
   } catch (err) {

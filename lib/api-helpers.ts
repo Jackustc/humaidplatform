@@ -44,17 +44,54 @@ export function withTimeout<T>(fn: () => Promise<T>, ms: number, label = "Reques
 export async function withRetry<T>(
   fn: () => Promise<T>,
   retries = 1,
-  delayMs = 1500
+  delayMs = 1500,
+  onError?: (err: unknown) => void
 ): Promise<T> {
   try {
     return await fn();
   } catch (err) {
+    onError?.(err); // count every failed attempt, including the final one
     // Do not retry on auth errors — retrying won't help
     if (err instanceof Error && err.message.includes("(401)")) throw err;
     if (retries <= 0) throw err;
     await new Promise((r) => setTimeout(r, delayMs));
-    return withRetry(fn, retries - 1, delayMs * 2);
+    return withRetry(fn, retries - 1, delayMs * 2, onError);
   }
+}
+
+// ── API call metrics (latency + error counting) ───────────────────────────────
+// Accumulates per-call latency and a count of failed model/API calls across a
+// single orchestrator run, for the apiLatencyMs / apiErrorCount session fields.
+export type CallMetrics = { latencies: number[]; errorCount: number };
+
+export function createMetrics(): CallMetrics {
+  return { latencies: [], errorCount: 0 };
+}
+
+/** Times a model/API call and records any failures into `metrics`. */
+export async function trackCall<T>(
+  metrics: CallMetrics,
+  fn: () => Promise<T>,
+  retries = 0
+): Promise<T> {
+  const start = Date.now();
+  try {
+    return await withRetry(fn, retries, 1500, () => {
+      metrics.errorCount++;
+    });
+  } finally {
+    metrics.latencies.push(Date.now() - start);
+  }
+}
+
+export function summariseMetrics(m: CallMetrics): {
+  apiLatencyMs: { perCall: number[]; total: number };
+  apiErrorCount: number;
+} {
+  return {
+    apiLatencyMs: { perCall: m.latencies, total: m.latencies.reduce((a, b) => a + b, 0) },
+    apiErrorCount: m.errorCount,
+  };
 }
 
 // ── Friendly HTTP error messages ──────────────────────────────────────────────

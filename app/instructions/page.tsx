@@ -11,10 +11,14 @@ export default function InstructionsPage() {
     const m = sessionStorage.getItem("humaid_mode");
     if (!m) { router.push("/task"); return; }
     setMode(m);
+    // Record when the instructions page was shown, to measure dwell time.
+    sessionStorage.setItem("humaid_instructions_start", String(Date.now()));
   }, [router]);
 
   function handleBegin() {
     sessionStorage.setItem("humaid_mode_start_time", new Date().toISOString());
+    const start = Number(sessionStorage.getItem("humaid_instructions_start") || 0);
+    if (start) sessionStorage.setItem("humaid_time_on_instructions_ms", String(Date.now() - start));
     router.push(mode === "collaborative" ? "/collaborative" : "/competitive");
   }
 

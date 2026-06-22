@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TASK } from "@/lib/data";
 import { logEvent, getEvents } from "@/lib/event-logger";
 import { computeProvenance, summariseProvenance } from "@/lib/provenance";
+import { editDistance, wordDelta } from "@/lib/edit-distance";
 
 type LogEntry = {
   id: string;
@@ -13,6 +14,8 @@ type LogEntry = {
   type: "plan" | "assignment" | "output" | "review" | "final";
   content: string;
 };
+
+type ModelRouting = Record<string, { provider: string; model: string }>;
 
 type Round = {
   roundNumber: number;
@@ -23,6 +26,9 @@ type Round = {
   tasks?: { agentA: string; agentB: string; agentC: string };
   writer?: "a" | "b" | "c";
   order?: ("a" | "b" | "c")[];
+  modelRouting?: ModelRouting;
+  apiLatencyMs?: { perCall: number[]; total: number };
+  apiErrorCount?: number;
 };
 
 const ACTOR_CONFIG: Record<LogEntry["actor"], { label: string; bg: string; text: string }> = {
@@ -174,6 +180,8 @@ export default function CollaborativePage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
   const [editMode, setEditMode] = useState(false);
+  const [actualTask, setActualTask] = useState(TASK.topic);
+  const [taskWasCustomized, setTaskWasCustomized] = useState(false);
 
   const logPanelRef = useScrollDepth("orchestrator_log");
   const reportPanelRef = useScrollDepth("final_report");
@@ -228,6 +236,9 @@ export default function CollaborativePage() {
         tasks: data.tasks,
         writer: data.writer,
         order: data.order,
+        modelRouting: data.modelRouting,
+        apiLatencyMs: data.apiLatencyMs,
+        apiErrorCount: data.apiErrorCount,
       };
       setRounds((prev) => [...prev, round]);
       setCurrentRound(round);
@@ -247,6 +258,16 @@ export default function CollaborativePage() {
 
   function handleStart() {
     const taskInput = userTask.trim() || TASK.topic;
+    setActualTask(taskInput);
+    setTaskWasCustomized(
+      Boolean(
+        userTask.trim() ||
+        preferences.trim() ||
+        agentAInstruction.trim() ||
+        agentBInstruction.trim() ||
+        agentCInstruction.trim()
+      )
+    );
     const combinedMessage = [
       preferences.trim(),
       agentAInstruction.trim() ? `Agent A instructions: ${agentAInstruction.trim()}` : "",
@@ -286,12 +307,42 @@ export default function CollaborativePage() {
     const provenanceSummary = summariseProvenance(provenanceSpans);
     logEvent("session_end", { provenanceSummary, totalRounds: rounds.length });
 
+    // ── Assemble the data-quality fields for the session record ──────────────
+    const startedAt = sessionStorage.getItem("humaid_start_time");
+    const completedAt = new Date().toISOString();
+    const totalDurationMs = startedAt
+      ? new Date(completedAt).getTime() - new Date(startedAt).getTime()
+      : 0;
+    const timeOnInstructionsMs = Number(sessionStorage.getItem("humaid_time_on_instructions_ms")) || null;
+    const allLatencies = rounds.flatMap((r) => r.apiLatencyMs?.perCall ?? []);
+    const apiLatencyMs = { perCall: allLatencies, total: allLatencies.reduce((a, b) => a + b, 0) };
+    const apiErrorCount = rounds.reduce((a, r) => a + (r.apiErrorCount ?? 0), 0);
+    const agentDisplayOrder = (currentRound?.order ?? ["a", "b", "c"]).map((id) => `Agent ${id.toUpperCase()}`);
+
     const sessionData = {
       sessionId: sessionStorage.getItem("humaid_session_id"),
       mode: "collaborative",
       task: TASK.topic,
+      // Data-quality schema fields
+      conditionAssignmentMethod: "manual_choice",
+      actualTask,
+      taskWasCustomized,
+      agentDisplayOrder,
+      modelRouting: currentRound?.modelRouting ?? null,
+      startedAt,
+      completedAt,
+      totalDurationMs,
+      timeOnInstructionsMs,
+      timeViewingEachAgentMs: {}, // collaborative has no per-agent view panels
+      editDistance: editDistance(originalSummary, finalText),
+      wordDelta: wordDelta(originalSummary, finalText),
+      rerunCount: Math.max(0, rounds.length - 1),
+      acceptedCoordinatorRecommendation: null, // n/a in collaborative mode
+      apiLatencyMs,
+      apiErrorCount,
+      // Existing fields
       startTime: sessionStorage.getItem("humaid_start_time"),
-      endTime: new Date().toISOString(),
+      endTime: completedAt,
       totalRounds: rounds.length,
       finalSubmission: finalText,
       originalSubmission: originalSummary,

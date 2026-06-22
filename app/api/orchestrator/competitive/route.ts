@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { checkEnv } from "@/lib/env";
-import { callDeepSeek, callGroq, withRetry, Msg } from "@/lib/api-helpers";
+import { callDeepSeek, callGroq, createMetrics, trackCall, summariseMetrics, Msg } from "@/lib/api-helpers";
 checkEnv();
 
 export const maxDuration = 60;
+
+// Which provider/model serves each agent in this mode (logged as modelRouting).
+const MODEL_ROUTING = {
+  a: { provider: "openai", model: "gpt-5.5" },
+  b: { provider: "groq", model: "llama-3.3-70b-versatile" },
+  c: { provider: "deepseek", model: "deepseek-chat" },
+};
 
 // OpenAI client with 25s per-call timeout
 const openaiClient = new OpenAI({
@@ -47,6 +54,7 @@ export async function POST(req: NextRequest) {
 
   const logs: LogEntry[] = [];
   const isReRun = round > 1 && previousFinal;
+  const metrics = createMetrics();
 
   try {
     // ── STEP 0: Build brief directly (no extra LLM call) ─────────────────────
@@ -66,16 +74,16 @@ export async function POST(req: NextRequest) {
     const promptC = `You are Agent C. Brief: ${brief}\n${reportInstruction}`;
 
     const [outputA, outputB, outputC] = await Promise.all([
-      withRetry(() =>
+      trackCall(metrics, () =>
         openaiClient.chat.completions
           .create({ model: "gpt-5.5", reasoning_effort: "none", messages: [{ role: "user", content: promptA }] })
-          .then((r) => r.choices[0].message.content ?? "")
+          .then((r) => r.choices[0].message.content ?? ""), 1
       ).catch((e) => { throw new Error(`Agent A failed: ${e.message}`); }),
 
-      withRetry(() => callGroq([{ role: "user", content: promptB }] as Msg[], 0.8))
+      trackCall(metrics, () => callGroq([{ role: "user", content: promptB }] as Msg[], 0.8), 1)
         .catch((e) => { throw new Error(`Agent B failed: ${e.message}`); }),
 
-      withRetry(() => callDeepSeek([{ role: "user", content: promptC }] as Msg[], 0.8))
+      trackCall(metrics, () => callDeepSeek([{ role: "user", content: promptC }] as Msg[], 0.8), 1)
         .catch((e) => { throw new Error(`Agent C failed: ${e.message}`); }),
     ]);
 
@@ -91,7 +99,7 @@ Use plain prose only — no markdown, no bold, no headers, no bullet points.
 Format: One short paragraph on the first report, then one short paragraph on the second. Keep each paragraph to 2 sentences maximum.`;
 
     const [critiqueA, critiqueB, critiqueC] = await Promise.all([
-      withRetry(() =>
+      trackCall(metrics, () =>
         openaiClient.chat.completions
           .create({
             model: "gpt-5.5",
@@ -101,19 +109,19 @@ Format: One short paragraph on the first report, then one short paragraph on the
               { role: "user", content: `Review these two reports and write a brief professional critique of each.\n\nReport B:\n${outputB}\n\nReport C:\n${outputC}` },
             ],
           })
-          .then((r) => r.choices[0].message.content ?? "")
+          .then((r) => r.choices[0].message.content ?? ""), 1
       ),
-      withRetry(() =>
+      trackCall(metrics, () =>
         callGroq([
           { role: "system", content: critiqueSystem },
           { role: "user", content: `Review these two reports and write a brief professional critique of each.\n\nReport A:\n${outputA}\n\nReport C:\n${outputC}` },
-        ] as Msg[], 0.6)
+        ] as Msg[], 0.6), 1
       ),
-      withRetry(() =>
+      trackCall(metrics, () =>
         callDeepSeek([
           { role: "system", content: critiqueSystem },
           { role: "user", content: `Review these two reports and write a brief professional critique of each.\n\nReport A:\n${outputA}\n\nReport B:\n${outputB}` },
-        ] as Msg[], 0.6)
+        ] as Msg[], 0.6), 1
       ),
     ]);
 
@@ -124,7 +132,7 @@ Format: One short paragraph on the first report, then one short paragraph on the
     logs.push(log("agent_c", "critique", truncate(critiqueC)));
 
     // ── STEP 3: Orchestrator decides final version ─────────────────────────────
-    const decisionRes = await withRetry(() =>
+    const decisionRes = await trackCall(metrics, () =>
       openaiClient.chat.completions.create({
         model: "gpt-5.5",
         reasoning_effort: "none",
@@ -140,7 +148,7 @@ Format: One short paragraph on the first report, then one short paragraph on the
             content: `Agent A:\n${outputA}\n\nAgent B:\n${outputB}\n\nAgent C:\n${outputC}\n\nCritiques:\nA: ${critiqueA}\nB: ${critiqueB}\nC: ${critiqueC}\n\nUser preferences: ${userMessage || "None."}\n\nReturn JSON.`,
           },
         ],
-      })
+      }), 1
     );
 
     let decision: Record<string, string> = {};
@@ -167,6 +175,8 @@ Format: One short paragraph on the first report, then one short paragraph on the
       finalVersion: decision.finalVersion,
       coordinatorDecision: decision.decision ?? "",
       coordinatorRationale: decision.rationale ?? "",
+      modelRouting: MODEL_ROUTING,
+      ...summariseMetrics(metrics),
       round,
     });
   } catch (err) {

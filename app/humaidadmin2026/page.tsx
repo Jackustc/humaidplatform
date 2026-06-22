@@ -63,6 +63,28 @@ type Session = {
   events?: unknown[];
   rounds?: RoundLog[];
   loggedAt: string;
+  // ── Data-quality schema fields ──
+  schemaVersion?: string;
+  appVersion?: string;
+  promptVersion?: string;
+  conditionAssignmentMethod?: string;
+  assignmentId?: string;
+  projectId?: string;
+  actualTask?: string;
+  taskWasCustomized?: boolean;
+  agentDisplayOrder?: string[];
+  modelRouting?: Record<string, { provider: string; model: string }>;
+  startedAt?: string;
+  completedAt?: string;
+  totalDurationMs?: number;
+  timeOnInstructionsMs?: number | null;
+  timeViewingEachAgentMs?: Record<string, number>;
+  editDistance?: number;
+  wordDelta?: number;
+  rerunCount?: number;
+  acceptedCoordinatorRecommendation?: boolean | null;
+  apiLatencyMs?: { perCall: number[]; total: number };
+  apiErrorCount?: number;
 };
 
 // ── Actor badge colours (matches participant-facing pages) ──────────────────
@@ -133,6 +155,42 @@ function LogModal({ session, onClose }: { session: Session; onClose: () => void 
 
         {/* Scrollable log body */}
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
+          {/* Data quality metrics */}
+          <div className="border border-gray-100 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">Data Quality</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 px-4 py-3 text-xs">
+              {([
+                ["Condition", session.conditionAssignmentMethod ?? "—"],
+                ["Task customized", session.taskWasCustomized == null ? "—" : session.taskWasCustomized ? "Yes" : "No"],
+                ["Rerun count", session.rerunCount ?? "—"],
+                ["Accepted coordinator", session.acceptedCoordinatorRecommendation == null ? "N/A" : session.acceptedCoordinatorRecommendation ? "Yes" : "No"],
+                ["Edit distance", session.editDistance ?? "—"],
+                ["Word delta", session.wordDelta ?? "—"],
+                ["API latency (ms)", session.apiLatencyMs?.total ?? "—"],
+                ["API errors", session.apiErrorCount ?? "—"],
+                ["Time on instructions (ms)", session.timeOnInstructionsMs ?? "—"],
+                ["App version", session.appVersion ?? "—"],
+                ["Prompt version", session.promptVersion ?? "—"],
+                ["Schema version", session.schemaVersion ?? "—"],
+              ] as [string, string | number][]).map(([label, value]) => (
+                <div key={label}>
+                  <p className="text-gray-400">{label}</p>
+                  <p className="text-gray-800 font-medium break-words">{String(value)}</p>
+                </div>
+              ))}
+            </div>
+            {session.modelRouting && (
+              <div className="px-4 pb-3 text-xs">
+                <p className="text-gray-400 mb-0.5">Model routing</p>
+                <p className="text-gray-700 font-mono break-words">
+                  {Object.entries(session.modelRouting).map(([k, v]) => `${k.toUpperCase()}: ${v.provider}/${v.model}`).join(" · ")}
+                </p>
+              </div>
+            )}
+          </div>
+
           {!session.rounds || session.rounds.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">No conversation log saved for this session.</p>
           ) : (
