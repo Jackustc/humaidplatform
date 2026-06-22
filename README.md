@@ -2,12 +2,27 @@
 
 **Human Multi-Agent AI Interaction Dynamics**
 
-A research platform studying how people interact with multiple AI agents when completing academic tasks. Participants complete a literature review using AI agents in one of two interaction modes. Every interaction is logged and available to researchers through a password-protected admin dashboard.
+HUMAID is a research platform for studying how people work with multiple AI agents on a knowledge task. Each participant writes a short industrial report on the use of Generative AI in industry, assisted by a team of three AI agents. The platform records how the participant guides, reviews, and edits the agents' output, and makes that data available to researchers through a password-protected dashboard.
 
-Live platform: NA
+Deployment: NA
 
+## Overview
 
----
+Participants are recruited through CloudResearch Connect. On arrival they enter their Connect participant ID, which is validated before the session begins. They are then given a writing task and complete it in one of two interaction modes. Every meaningful action during the session is logged, and the final submission is compared against the original AI output to measure how much of it the participant actually changed.
+
+The study is built around a comparison between two ways of organising several agents around a single task.
+
+## Interaction Modes
+
+### Collaborative
+
+Three agents work in sequence under a coordinating orchestrator. The orchestrator reads the participant's task and decides what each agent should do; the roles are not fixed and vary from run to run. The first two agents carry out research and analysis, and the final agent writes the report using their combined work. The participant sees the orchestrator's full activity log, reads the finished report, and can edit it before submitting. If the result is unsatisfactory, the participant can send written feedback and the orchestrator runs the pipeline again.
+
+### Competitive
+
+Three agents work on the same task independently and in parallel, each producing its own report. They then review each other's work, and the orchestrator selects the version it considers strongest, with a written rationale. The participant sees all three reports, the critiques, and the orchestrator's decision. They can keep the recommended version or choose a different agent's output, edit it, and submit. As in collaborative mode, the participant can request another round with feedback.
+
+Before starting, the participant can optionally provide a custom task, set preferences such as tone or audience, and assign specific instructions to individual agents.
 
 ## Tech Stack
 
@@ -16,146 +31,58 @@ Live platform: NA
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
-| AI | OpenAI GPT-4o |
-| Database | Upstash Redis (via Vercel KV) |
-| Deployment | Vercel |
-| Auth | Custom cookie-based password gate |
+| AI providers | OpenAI, Groq, DeepSeek |
+| Data store | Upstash Redis (Vercel KV) |
+| Recruitment | CloudResearch Connect |
+| Auth | Cookie-based password gate |
 
----
+## AI Models
 
-## Application Flow
+The three agents are deliberately powered by different model providers (OpenAI, Groq, and DeepSeek) so that their outputs are genuinely distinct rather than three variations from a single model. The orchestrator's planning and decision steps run on OpenAI. The provider assigned to each agent is recorded with every session.
 
-### 1. Consent and Demographics
+## Data Collection
 
-A participant visits the platform and sees a consent form with a brief description of the study. They fill in demographic fields (age range, education level, AI familiarity, field of study) and check a consent box. A unique session ID is generated at this point in the format `sess_<timestamp>_<random>`. All subsequent events are tracked under that ID using sessionStorage.
+Each completed session is stored as a single record. Alongside the participant's submission and survey responses, the record captures a structured set of fields intended for quantitative analysis, including:
 
----
+- Version stamps for the data schema, the deployed build, and the agent prompt set
+- The participant, assignment, and project identifiers from CloudResearch Connect
+- The condition (mode) and how it was assigned
+- The actual task used and whether the participant customised it
+- The order agents were shown and which model served each one
+- Timing: total session duration, time spent on the instructions, and time spent viewing each agent's output
+- Edit metrics: edit distance and word-count change between the AI output and the final submission
+- The number of re-runs, and whether the participant kept the orchestrator's recommendation
+- API latency per call and in aggregate, and the number of failed model calls
 
-### 2. Task and Mode Selection
+A separate event stream records lower-level interactions during the session, such as scroll depth on each panel and debounced edits to the report.
 
-The participant reads the task description — a literature review on Generative AI in Higher Education — and selects either Collaborative Mode or Competitive Mode. Their choice is stored in sessionStorage and they are sent to the instructions page.
+## Participant Validation
 
----
+Connect participant IDs are validated on the server through the CloudResearch validate-participants endpoint before a participant can start or submit. A participant who has already completed a session is prevented from completing a second one. Both behaviours are controlled by environment flags so the study settings can change without a code change:
 
-### 3. Collaborative Mode
-
-The participant works through a sequential three-step pipeline. Each step calls the OpenAI API and the result from one step is passed as input to the next.
-
-**Step 1 — Agent 1: Keyword Specialist**
-Calls `POST /api/agents/keywords` with the topic. GPT-4o generates 12 to 15 specific academic search keywords. They are displayed as tags. The participant clicks "Use these keywords" to proceed.
-
-**Step 2 — Agent 2: Paper Search Specialist**
-Calls `POST /api/agents/papers` with the keywords from Step 1. GPT-4o generates 5 to 7 realistic academic paper references with titles, authors, years, journals, relevance ratings, and summaries. The participant reviews the papers and clicks "Use these papers."
-
-**Step 3 — Agent 3: Literature Summarizer**
-Calls `POST /api/agents/summary` with the papers from Step 2. GPT-4o synthesizes a three-paragraph literature review. The participant can edit the text before submitting.
-
----
-
-### 4. Competitive Mode
-
-All three agents run simultaneously in parallel. On page load, `POST /api/agents/competitive` fires a single request that calls GPT-4o three times concurrently, each with a different style prompt. The three outputs appear side by side.
-
-- **Agent A — Analytical and Structured**: evidence-based with bullet points and clear headers
-- **Agent B — Narrative and Flowing**: continuous prose that builds an argument
-- **Agent C — Critical and Concise**: short, direct, surfaces tensions and gaps
-
-The participant must scroll through each output before the Select button unlocks. They select one, optionally edit it, and submit.
-
----
-
-### 5. Submission and Survey
-
-After submitting, the participant rates their confidence in the final answer (1 to 5), then completes a short post-task survey covering trust in the AI output, perceived difficulty, satisfaction, and mental effort (all 1 to 5 scales). Clicking "Submit and complete" sends all session data to `POST /api/log`, which writes it to Upstash Redis.
-
----
-
-## What Gets Logged
-
-Every session records the following:
-
-**Session metadata**
-Session ID, mode, task topic, start time, end time, whether the output was edited, original character count, final character count, characters added, characters removed.
-
-**Collaborative-specific**
-Timestamps for each step transition (when the participant advanced from Agent 1 to 2, and 2 to 3).
-
-**Competitive-specific**
-Which agent was selected and the timestamp of selection.
-
-**Survey data**
-Confidence rating, trust, difficulty, satisfaction, and effort scores. Demographics (age range, education, AI familiarity, field of study).
-
-**Provenance analysis**
-A character-level comparison between the participant's final text and the original AI output using a longest-common-substring algorithm. Reports what percentage of the final submission came from the AI versus was typed by the participant.
-
-**Event stream**
-A timestamped log of every interaction during the session: when the participant viewed each agent panel (with dwell time in milliseconds), scroll depth percentages on each agent card, hover durations, copy events, paste events, textarea focus and blur, and debounced edit events with character and word counts.
-
----
+- `STRICT_PARTICIPANT_VALIDATION` set to `true` blocks participants when validation cannot be completed. By default the platform allows them through and records the session as unvalidated.
+- `ALLOW_REPEAT_PARTICIPATION` set to `true` permits repeat completions. By default they are blocked.
 
 ## Admin Dashboard
 
-The admin dashboard is available at `/admin` and is protected by a password. Unauthenticated users are redirected to `/admin/login`. The cookie lasts 7 days.
-
-The dashboard shows:
-
-- Summary cards: total sessions, collaborative count, competitive count, percentage who edited the AI output
-- Survey averages across all sessions: confidence, trust, difficulty, satisfaction, effort
-- A full sessions table with all recorded fields
-- An Export CSV button that downloads a two-section CSV: session summary rows and a full event stream
-
----
-
-## Project Structure
-
-```
-app/
-  page.tsx                    Consent and demographics
-  task/                       Task description and mode selection
-  instructions/               Mode-specific instructions
-  collaborative/              Sequential three-agent pipeline
-  competitive/                Parallel three-agent comparison
-  submit/                     Confidence rating, survey, and final logging
-  admin/
-    page.tsx                  Session dashboard (protected)
-    login/page.tsx            Password login page
-  api/
-    agents/
-      keywords/route.ts       GPT-4o keyword generation
-      papers/route.ts         GPT-4o paper retrieval
-      summary/route.ts        GPT-4o literature review synthesis
-      competitive/route.ts    Three parallel GPT-4o calls
-    log/route.ts              Writes session to Upstash Redis
-    sessions/route.ts         Reads all sessions from Upstash Redis
-    export/route.ts           Generates and downloads CSV
-    admin/
-      login/route.ts          Validates password, sets cookie
-      logout/route.ts         Clears cookie
-components/
-  progress-bar.tsx            Step indicator shown in the navbar
-lib/
-  data.ts                     Task configuration and topic
-  event-logger.ts             Client-side event accumulator (sessionStorage)
-  provenance.ts               LCS-based text provenance algorithm
-middleware.ts                 Redirects unauthenticated /admin requests to login
-```
-
----
+The dashboard sits behind a private path and a password, with the session cookie lasting seven days. It shows summary counts, survey averages, a table of all sessions, and a per-session log that includes the full agent conversation and the data-quality metrics. Researchers can export the data as Excel, CSV, or JSON.
 
 ## Environment Variables
 
-The following variables must be set in `.env.local` for local development and in Vercel for production.
+Set the following for local development and in the hosting environment for production:
 
 ```
-OPENAI_API_KEY=        Your OpenAI API key (GPT-4o access required)
-ADMIN_PASSWORD=        Password to log in to the admin dashboard
-ADMIN_SECRET=          Random secret string used to sign the admin cookie
-KV_REST_API_URL=       Injected automatically by Vercel when Upstash is connected
-KV_REST_API_TOKEN=     Injected automatically by Vercel when Upstash is connected
+OPENAI_API_KEY            OpenAI API key
+GROQ_API_KEY              Groq API key
+DEEPSEEK_API_KEY          DeepSeek API key
+ADMIN_PASSWORD            Password for the admin dashboard
+ADMIN_SECRET              Secret used to sign the admin session cookie
+KV_REST_API_URL           Key-value store REST URL
+KV_REST_API_TOKEN         Key-value store REST token
+CLOUDRESEARCH_API_KEY     CloudResearch Connect API key (participant validation)
 ```
 
----
+Optional flags: `STRICT_PARTICIPANT_VALIDATION`, `ALLOW_REPEAT_PARTICIPATION`.
 
 ## Running Locally
 
@@ -164,18 +91,8 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
-
-For the AI routes to work locally you need a valid `OPENAI_API_KEY` in `.env.local`. For the admin dashboard to persist data locally you need the Upstash KV vars, which you can pull using the Vercel CLI:
-
-```bash
-npx vercel env pull .env.local
-```
-
----
+Then open http://localhost:3000. The AI routes require valid model provider keys. Participant validation falls back to allowing entry when no CloudResearch key is configured, so the flow can be tested locally without one.
 
 ## Research Context
 
-This platform supports ongoing research on the HUMAID theoretical framework, which addresses a gap in human-AI interaction theory. Existing models focus on one-to-one (dyadic) interactions between a human and a single AI. As multi-agent systems become more common, new dynamics emerge around information overload, inconsistent agent outputs, delegation behaviour, and social influence effects that existing models do not account for.
-
-Working paper: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6650059
+The platform supports work on the HUMAID framework, which addresses a gap in human-AI interaction theory. Most existing models describe a single human interacting with a single AI. As multi-agent systems become more common, new dynamics arise around information overload, inconsistent outputs across agents, delegation, and social influence, none of which the dyadic models account for. HUMAID provides a controlled setting in which these dynamics can be observed and measured.
