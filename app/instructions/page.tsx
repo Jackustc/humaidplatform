@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ModeChecklist } from "@/components/mode-checklist";
 
 export default function InstructionsPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function InstructionsPage() {
 
       {mode === "collaborative" ? (
         <div className="space-y-4 mb-8">
+          <ModeChecklist mode="collaborative" />
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">How It Works</p>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
@@ -81,6 +83,7 @@ export default function InstructionsPage() {
         </div>
       ) : (
         <div className="space-y-4 mb-8">
+          <ModeChecklist mode="competitive" />
           <div className="border border-gray-200 rounded-lg p-5 bg-white">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">How It Works</p>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
