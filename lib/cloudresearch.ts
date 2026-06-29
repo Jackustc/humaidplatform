@@ -72,8 +72,10 @@ function normaliseResults(data: unknown, requestedIds: string[]): ParticipantVal
   }
 
   if (arr.length === 0) {
-    // Couldn't find a recognisable array — return everything as unknown so the
-    // caller can decide (fail open / fail closed) rather than silently passing.
+    // Couldn't find a recognisable array — log the shape (visible in server logs)
+    // so the parser can be tightened to the real response, and return everything
+    // as unknown so the caller decides (fail open / fail closed).
+    console.warn("[cloudresearch] Unrecognised validate response shape:", JSON.stringify(data)?.slice(0, 500));
     return requestedIds.map((id) => ({ participantId: id, status: "unknown" as const, raw: data }));
   }
 
