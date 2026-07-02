@@ -5,10 +5,11 @@
  *   POST https://connect-api.cloudresearch.com/api/v1/account/validate-participants
  * Authentication is via the `X-API-KEY` request header.
  *
- * The exact request/response field names are not published openly, so the
- * response parsing here is deliberately defensive — it accepts several plausible
- * shapes and normalises them. Tighten `normaliseResults()` once we observe a
- * real response from the live API.
+ * Confirmed request/response contract (verified against the live API):
+ *   request:  { "participants": ["<id>", ...] }
+ *   response: { "participants": [{ "participantId": "<id>", "status": "Valid" | "Invalid" }] }
+ * The parsing below stays defensive (accepts several shapes) but is aligned to
+ * the above.
  */
 
 import { sanitizeKey, withTimeout } from "@/lib/api-helpers";
@@ -111,7 +112,7 @@ export async function validateParticipants(
             "Content-Type": "application/json",
             "X-API-KEY": key,
           },
-          body: JSON.stringify({ participantIds: ids }),
+          body: JSON.stringify({ participants: ids }),
         }),
       timeoutMs,
       "CloudResearch validate"
